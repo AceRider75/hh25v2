@@ -625,10 +625,10 @@ document.addEventListener('DOMContentLoaded', () => {
             turn: nextTurn,
             castlingRights: nextCastlingRights,
             enPassantSquare: nextEnPassantSquare,
-            // Ensure players object exists, default if somehow missing
-            players: (gameState && gameState.players) ? gameState.players : { white: true, black: true },
+            // Assume both players are present when a move is made
+            players: { white: true, black: true }, 
             status: nextGameStatus,
-            lastMove: {
+            lastMove: { 
                 from: [fromRow, fromCol], to: [toRow, toCol],
                 piece: pieceType, color: pieceColor,
                 // Was this move a castle? (King move > 1 square)
