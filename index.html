@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Game</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-database-compat.js"></script>
+
+</head>
+<body>
+    <h1 id="game-title">Chess</h1>
+
+    <!-- Multiplayer Controls -->
+    <div id="multiplayer-controls">
+        <button id="createGameBtn">Create New Game</button>
+        <input type="text" id="gameIdInput" placeholder="Enter Game ID to Join">
+        <button id="joinGameBtn">Join Game</button>
+        <p id="gameIdDisplay"></p>
+    </div>
+
+    <div id="board"></div>
+    
+    <div id="status">White's turn</div>
+    <button id="undoMoveBtn">Undo</button>
+    <button id="redoMoveBtn">Redo</button>
+    
+    
+    <!-- Promotion Modal -->
+    <div id="promotionModal" style="display:none;">
+        <div id="promotionOptions">
+            <button data-piece="queen" class="promotionChoice">♕</button>
+            <button data-piece="rook" class="promotionChoice">♖</button>
+            <button data-piece="bishop" class="promotionChoice">♗</button>
+            <button data-piece="knight" class="promotionChoice">♘</button>
+        </div>
+    </div>
+    <div id="checkmateModal" class="modal">
+        <span class="close">&times;</span>
+        <div class="modal-content">
+            <h2 id="checkmateResult"></h2>
+            <div id="winningPiece"></div>
+            <button id="continueButton">Continue</button>
+        </div>
+    </div>
+
+    <!-- Load game logic first -->
+    <script src="game_logic.js"></script>
+    <!-- Load UI and multiplayer interaction second -->
+    <script src="ui_multiplayer.js"></script>
+</body>
+</html>
