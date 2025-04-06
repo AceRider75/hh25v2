@@ -226,7 +226,6 @@ button:disabled {
     border-radius: 10px; /* Old: Rounded border */
     box-shadow: 0 8px 16px rgba(0,0,0,0.4); /* Keep some shadow */
     aspect-ratio: 1 / 1; /* Ensure it's square */
-    width: 100%; /* Take up container width */
     background-color: #b58863; /* Old: Dark square fallback */
 }
 
