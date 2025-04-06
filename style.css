@@ -122,7 +122,6 @@ body {
 #multiplayer-controls .button-group {
     display: flex;
     gap: 0.8rem;
-    width: 100%;
     justify-content: center;
 }
 
