@@ -510,4 +510,6 @@ button:disabled {
         font-size: 0.7rem;
         padding: 0.3rem 0.6rem;
     }
+    #board{
+        width: 100%;
 }
