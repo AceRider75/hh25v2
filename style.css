@@ -217,22 +217,23 @@ button:disabled {
     text-align: center;
     min-height: 1.5em; /* Prevent layout shifts */
     padding: 0.5rem;
-    background-color: rgba(40, 40, 45, 0.5);
+    background-color: rgba(40, 40, 45, 0.5); /* Keep dark status bg */
     border-radius: 4px;
     width: 100%;
     max-width: 400px;
 }
 
+/* --- Start Board Style Revert --- */
 #board {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
-    border: 6px solid #111; /* Dark border */
-    border-radius: 4px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+    border: 8px solid #654321; /* Old: Dark wood color for border */
+    border-radius: 10px; /* Old: Rounded border */
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4); /* Keep some shadow */
     aspect-ratio: 1 / 1; /* Ensure it's square */
     width: 100%; /* Take up container width */
-    background-color: #333; /* Fallback */
+    background-color: #b58863; /* Old: Dark square fallback */
 }
 
 .square {
@@ -240,55 +241,58 @@ button:disabled {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: clamp(1.8rem, 7vw, 3.5rem); /* Responsive piece size */
-    /* Use a chess font if available, otherwise fallback */
-    font-family: 'Chess Merida', 'Merida', 'Arial Unicode MS', sans-serif;
+    font-size: clamp(1.8rem, 7vw, 3.5rem); /* Keep responsive piece size */
+    font-family: 'Chess Merida', 'Arial Unicode MS', sans-serif; /* Old: Specific font */
     cursor: pointer;
     user-select: none;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease; /* Keep transition */
     overflow: hidden; /* Keep effects contained */
 }
 
-/* Dark theme squares */
-.light { background-color: #4a4a4c; }
-.dark { background-color: #3a3a3c; }
+/* Old Square Colors */
+.light { background-color: #f0d9b5; }
+.dark { background-color: #b58863; }
 
-/* Piece Colors */
-.square[data-color="white"] { color: #e8e8e8; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
-.square[data-color="black"] { color: #1c1c1c; text-shadow: 1px 1px 2px rgba(255,255,255,0.3); }
+/* Old Piece Colors/Shadows (Slightly adjusted for visibility) */
+.square[data-color="white"] { color: #f0f0f0; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
+.square[data-color="black"] { color: #333; text-shadow: 1px 1px 2px rgba(255,255,255,0.2); }
+/* --- End Board Style Revert --- */
 
-/* Square Interactions & Indicators */
+/* Square Interactions & Indicators (Keep New Style but adapted) */
 .square:hover {
-    filter: brightness(1.2);
+    filter: brightness(1.15); /* Slightly brighter hover for wood */
 }
 
 .selected {
-    /* Use outline/box-shadow for dark theme */
-    outline: 3px solid #c3073f; /* Accent color outline */
+    /* Use outline/box-shadow from dark theme for consistency */
+    outline: 3px solid #c3073f; /* Use accent color */
     outline-offset: -3px;
     box-shadow: inset 0 0 15px rgba(195, 7, 63, 0.4);
-    background-color: inherit; /* Don't change bg color much */
+    /* Don't change wood bg much */
+    background-color: inherit;
 }
 
 .valid-move::after {
-    content: '';
-    position: absolute;
-    width: 25%;
-    height: 25%;
-    background-color: rgba(255, 255, 255, 0.2); /* Subtle light dot */
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 2;
+    /* Keep dark theme dot, maybe adjust color */
+     content: '';
+     position: absolute;
+     width: 25%;
+     height: 25%;
+     background-color: rgba(40, 100, 40, 0.8); /* Darker green dot */
+     border-radius: 50%;
+     pointer-events: none;
+     z-index: 2;
 }
 
-.capture-move::before { /* Use before to avoid conflict */
+.capture-move::before {
+    /* Keep dark theme ring */
     content: '';
     position: absolute;
     top: 10%;
     left: 10%;
     width: 80%;
     height: 80%;
-    border: 3px solid rgba(195, 7, 63, 0.6); /* Accent color ring */
+    border: 3px solid rgba(195, 7, 63, 0.7); /* Accent color ring */
     border-radius: 50%;
     box-sizing: border-box;
     pointer-events: none;
@@ -296,7 +300,7 @@ button:disabled {
 }
 
 .square.check {
-    /* Use a background glow */
+    /* Keep dark theme glow */
     animation: checkGlow 1.5s infinite alternate;
 }
 
