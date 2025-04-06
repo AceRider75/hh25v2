@@ -12,6 +12,7 @@
 
 html {
     font-size: 16px; /* Base font size */
+    height: 100%; /* Ensure html takes full height */
 }
 
 body {
@@ -19,12 +20,12 @@ body {
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
-    background-color: #1a1a1d; /* Dark background */
-    background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.6)), url('https://www.transparenttextures.com/patterns/carbon-fibre-v2.png'); /* Subtle texture */
+    /* Revert to a simpler, light background */
+    background-color: #f0f0f0; /* Light grey background */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #e0e0e0; /* Light grey text */
+    color: #333; /* Darker text for light background */
     padding: 1rem;
-    overflow-x: hidden; /* Prevent horizontal scroll */
+    overflow-x: hidden;
 }
 
 /* ========================================= */
@@ -36,7 +37,7 @@ body {
     flex-direction: column;
     align-items: center;
     width: 100%;
-    max-width: 900px; /* Max width for larger screens */
+    max-width: 900px; /* Simple max-width */
     padding: 1rem;
 }
 
@@ -44,29 +45,32 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    gap: 1rem; /* Simpler gap */
+    margin-bottom: 1.5rem; /* Adjusted margin */
     width: 100%;
-    max-width: 500px; /* Limit width of controls */
-    padding: 1.5rem;
-    background-color: rgba(40, 40, 45, 0.7); /* Slightly lighter dark bg */
+    max-width: 500px;
+    padding: 1.2rem; /* Slightly adjusted padding */
+    /* Revert to a lighter background/border */
+    background-color: #ffffff;
+    border: 1px solid #ccc;
     border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 #game-container {
-    display: flex; /* Use flex to manage status/board */
+    display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
+    gap: 1rem; /* Add gap for spacing */
 }
 
 #board-container {
     width: 100%;
-    max-width: 60vh; /* Max size based on viewport height */
-    max-height: 80vw; /* Max size based on viewport width */
-    margin: 1rem auto; /* Center the board container */
-    position: relative; /* For potential overlays or effects */
+    max-width: 560px; /* Fixed max-width for board based on common screen sizes */
+    aspect-ratio: 1 / 1; /* Ensure square */
+    margin: 1rem auto;
+    position: relative;
 }
 
 
@@ -77,15 +81,17 @@ body {
 #connection-info,
 #game-id-corner {
     position: fixed;
-    top: 10px;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: #ccc;
-    padding: 0.4rem 0.8rem;
+    top: 10px; /* Simple positioning */
+    /* Revert to lighter background */
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #555; /* Darker text */
+    padding: 0.4rem 0.8rem; /* Simple padding */
     border-radius: 4px;
-    font-size: 0.8rem;
+    border: 1px solid #ddd;
+    font-size: 0.8rem; /* Simple font size */
     z-index: 100;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px); /* Subtle blur effect */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(1px); /* Lighter blur */
 }
 
 #connection-info { left: 10px; }
@@ -94,7 +100,7 @@ body {
 #connection-info span,
 #game-id-corner span {
     font-weight: bold;
-    color: #fff;
+    color: #000; /* Black text for emphasis */
 }
 
 
@@ -103,10 +109,10 @@ body {
 /* ========================================= */
 
 #game-title {
-    font-size: clamp(1.8rem, 5vw, 2.5rem); /* Responsive font size */
-    color: #c3073f; /* Accent color */
+    font-size: 2.2rem; /* Fixed size */
+    color: #c3073f; /* Keep accent */
     margin-bottom: 1.5rem;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+    text-shadow: none; /* Remove shadow for simpler look */
     text-align: center;
     font-weight: bold;
 }
@@ -114,9 +120,9 @@ body {
 #multiplayer-controls,
 #matchmaking-controls {
     display: flex;
-    flex-direction: column; /* Stack vertically */
+    flex-direction: column;
     align-items: center;
-    gap: 0.8rem;
+    gap: 0.8rem; /* Simple gap */
     width: 100%;
 }
 
@@ -126,114 +132,120 @@ body {
     width: 100%;
     justify-content: center;
 }
-#multiplayer-controls .button-group button {
-    flex-grow: 1; /* Buttons share space */
-}
-
 
 input[type="text"] {
-    padding: 0.8rem 1rem;
-    font-size: 1rem;
-    background-color: #2a2a2e; /* Dark input bg */
-    color: #e0e0e0;
-    border: 1px solid #444;
+    padding: 0.8rem 1rem; /* Simple padding */
+    font-size: 1rem; /* Fixed size */
+    /* Revert to standard light input */
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #ccc;
     border-radius: 4px;
-    width: 100%; /* Full width within container */
-    transition: border-color 0.3s, box-shadow 0.3s;
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
     text-align: center;
 }
 
+/* Keep placeholder style */
 input[type="text"]::placeholder {
-    color: #888;
+    color: #999;
 }
 
+/* Keep simple focus style */
 input[type="text"]:focus {
     outline: none;
-    border-color: #c3073f; /* Accent color on focus */
-    box-shadow: 0 0 0 2px rgba(195, 7, 63, 0.3);
+    border-color: #888;
+    box-shadow: 0 0 0 2px rgba(150, 150, 150, 0.2);
 }
 
 p#gameIdDisplay {
     margin-top: 0.5rem;
     font-size: 0.9rem;
-    color: #aaa;
+    color: #666; /* Adjust for light bg */
     min-height: 1.2em;
     text-align: center;
 }
 
 button {
-    padding: 0.8rem 1.5rem;
-    font-size: 1rem;
+    padding: 0.8rem 1.5rem; /* Simple padding */
+    font-size: 1rem; /* Fixed size */
     font-weight: bold;
-    background-color: #4e4e50; /* Dark grey button */
-    color: #fff;
-    border: none;
+    /* Revert to standard button style */
+    background-color: #e0e0e0;
+    color: #333;
+    border: 1px solid #ccc;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s, transform 0.1s;
+    transition: background-color 0.2s, border-color 0.2s;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    width: 100%; /* Default full width */
-    max-width: 220px; /* Max width */
+    width: 100%;
+    max-width: 220px;
 }
-/* Make grouped buttons not full width */
+
 #multiplayer-controls .button-group button {
      width: auto;
+     flex-grow: 1; /* Let them share space */
      max-width: none;
 }
 
-
+/* Keep button states */
 button:hover {
-    background-color: #6a6a6d;
+    background-color: #d5d5d5;
+    border-color: #bbb;
 }
-
 button:active {
-    transform: scale(0.98);
-    background-color: #5a5a5d;
+    background-color: #ccc;
+    transform: scale(0.99); /* Less pronounced active scale */
 }
-
 button:disabled {
-    background-color: #3a3a3d;
-    color: #777;
+    background-color: #f5f5f5;
+    color: #aaa;
+    border-color: #ddd;
     cursor: not-allowed;
 }
-
 #matchmaking-controls #cancelSearchBtn {
-    background-color: #9a031e; /* Darker red */
+    background-color: #f8d7da; /* Light red */
+    color: #721c24; /* Dark red text */
+    border-color: #f5c6cb;
 }
 #matchmaking-controls #cancelSearchBtn:hover {
-    background-color: #c3073f;
+    background-color: #f5c6cb;
+    border-color: #f1b0b7;
 }
+
 
 /* ========================================= */
 /*          Game Area & Board              */
 /* ========================================= */
 
 #status {
-    margin-bottom: 1rem; /* Space below status */
-    font-size: clamp(1rem, 4vw, 1.3rem); /* Responsive */
+    margin-bottom: 1rem;
+    font-size: 1.1rem; /* Fixed size */
     font-weight: bold;
-    color: #f0f0f0;
+    color: #444; /* Adjust for light bg */
     text-align: center;
-    min-height: 1.5em; /* Prevent layout shifts */
+    min-height: 1.5em;
     padding: 0.5rem;
-    background-color: rgba(40, 40, 45, 0.5); /* Keep dark status bg */
+    /* Revert background */
+    background-color: #eee;
+    border: 1px solid #ddd;
     border-radius: 4px;
     width: 100%;
     max-width: 400px;
 }
 
-/* --- Start Board Style Revert --- */
+/* Restore Original Board Styles */
 #board {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
-    border: 8px solid #654321; /* Old: Dark wood color for border */
-    border-radius: 10px; /* Old: Rounded border */
-    box-shadow: 0 8px 16px rgba(0,0,0,0.4); /* Keep some shadow */
-    aspect-ratio: 1 / 1; /* Ensure it's square */
-    width: 100%; /* Take up container width */
-    background-color: #b58863; /* Old: Dark square fallback */
+    border: 8px solid #654321; /* Dark wood border */
+    border-radius: 10px; /* Rounded border */
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2); /* Lighter shadow */
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    background-color: #b58863; /* Dark square fallback */
 }
 
 .square {
@@ -241,58 +253,55 @@ button:disabled {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: clamp(1.8rem, 7vw, 3.5rem); /* Keep responsive piece size */
-    font-family: 'Chess Merida', 'Arial Unicode MS', sans-serif; /* Old: Specific font */
+    font-size: 2.8rem; /* Fixed size for pieces */
+    font-family: 'Chess Merida', 'Arial Unicode MS', sans-serif; /* Specific font */
     cursor: pointer;
     user-select: none;
-    transition: background-color 0.2s ease; /* Keep transition */
-    overflow: hidden; /* Keep effects contained */
+    transition: background-color 0.1s ease; /* Faster transition */
+    overflow: hidden;
 }
 
-/* Old Square Colors */
+/* Original Square Colors */
 .light { background-color: #f0d9b5; }
 .dark { background-color: #b58863; }
 
-/* Old Piece Colors/Shadows (Slightly adjusted for visibility) */
-.square[data-color="white"] { color: #f0f0f0; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
-.square[data-color="black"] { color: #333; text-shadow: 1px 1px 2px rgba(255,255,255,0.2); }
-/* --- End Board Style Revert --- */
+/* Original Piece Colors/Shadows */
+.square[data-color="white"] { color: #ffffff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+.square[data-color="black"] { color: #202020; text-shadow: none; }
 
-/* Square Interactions & Indicators (Keep New Style but adapted) */
+/* Original Square Interactions & Indicators */
 .square:hover {
-    filter: brightness(1.15); /* Slightly brighter hover for wood */
+    filter: brightness(1.1); /* Simpler hover */
 }
 
 .selected {
-    /* Use outline/box-shadow from dark theme for consistency */
-    outline: 3px solid #c3073f; /* Use accent color */
-    outline-offset: -3px;
-    box-shadow: inset 0 0 15px rgba(195, 7, 63, 0.4);
-    /* Don't change wood bg much */
-    background-color: inherit;
+    /* Simple yellow highlight */
+    background-color: rgba(255, 255, 0, 0.4) !important; /* Override light/dark */
+    outline: none;
+    box-shadow: none;
 }
 
 .valid-move::after {
-    /* Keep dark theme dot, maybe adjust color */
+     /* Simple green dot */
      content: '';
      position: absolute;
-     width: 25%;
-     height: 25%;
-     background-color: rgba(40, 100, 40, 0.8); /* Darker green dot */
+     width: 20%;
+     height: 20%;
+     background-color: rgba(0, 128, 0, 0.6);
      border-radius: 50%;
      pointer-events: none;
      z-index: 2;
 }
 
 .capture-move::before {
-    /* Keep dark theme ring */
+    /* Simple red ring */
     content: '';
     position: absolute;
-    top: 10%;
-    left: 10%;
-    width: 80%;
-    height: 80%;
-    border: 3px solid rgba(195, 7, 63, 0.7); /* Accent color ring */
+    top: 5%;
+    left: 5%;
+    width: 90%;
+    height: 90%;
+    border: 4px solid rgba(255, 0, 0, 0.5);
     border-radius: 50%;
     box-sizing: border-box;
     pointer-events: none;
@@ -300,19 +309,21 @@ button:disabled {
 }
 
 .square.check {
-    /* Keep dark theme glow */
-    animation: checkGlow 1.5s infinite alternate;
+    /* Simple red background flash */
+    animation: checkFlash 0.8s infinite alternate;
 }
 
-@keyframes checkGlow {
-    from { box-shadow: inset 0 0 15px 5px rgba(255, 0, 0, 0.4); }
-    to   { box-shadow: inset 0 0 25px 8px rgba(255, 0, 0, 0.7); }
+@keyframes checkFlash {
+    from { background-color: rgba(255, 0, 0, 0.3); }
+    to   { background-color: rgba(255, 0, 0, 0.1); }
 }
 
+
 /* ========================================= */
-/*               Modals                    */
+/*               Modals (Unchanged)        */
 /* ========================================= */
 
+/* Keep all modal styles exactly as they were */
 .modal {
     display: none; /* Hidden by default */
     position: fixed; /* Stay in place */
@@ -438,19 +449,21 @@ button:disabled {
     width: auto; /* Don't force full width */
     max-width: none;
     padding: 0.7rem 2rem;
+    /* Ensure button styles align with modal theme */
+    color: #fff;
+    border: none;
 }
 #checkmateModal #continueButton:hover {
     background-color: #9a031e;
 }
 
-
 /* ========================================= */
-/*          Responsiveness                 */
+/*          Responsiveness (Simplified)    */
 /* ========================================= */
 
 @media (max-width: 600px) {
     body {
-        padding: 0.5rem;
+        padding: 0.5rem; /* Less padding on mobile */
     }
 
     #main-container {
@@ -459,14 +472,11 @@ button:disabled {
 
     #controls-container {
         padding: 1rem;
-        gap: 1rem;
+        gap: 0.8rem; /* Adjust gap */
+        margin-bottom: 1rem;
     }
 
-    #multiplayer-controls,
-    #matchmaking-controls {
-        gap: 0.6rem;
-    }
-     #multiplayer-controls .button-group {
+    #multiplayer-controls .button-group {
         flex-direction: column; /* Stack create/join */
     }
 
@@ -478,26 +488,28 @@ button:disabled {
     button {
         padding: 0.7rem 1rem;
         font-size: 0.9rem;
+        max-width: none; /* Allow full width */
     }
     #multiplayer-controls .button-group button {
          width: 100%; /* Stacked buttons take full width */
     }
 
     #status {
-        font-size: 0.9rem;
+        font-size: 1rem;
         padding: 0.4rem;
-        max-width: 90%;
+        max-width: 95%; /* Adjust max width */
     }
 
     #board-container {
-        max-width: 90vw; /* Allow board to take more width */
-        max-height: 90vw; /* Keep aspect ratio */
+        max-width: 95vw; /* Allow board to take most width */
+        border-width: 5px; /* Slightly thinner border */
     }
 
     .square {
-        font-size: clamp(1.5rem, 8vw, 2.5rem); /* Adjust piece size */
+        font-size: 9vw; /* Simple responsive piece size */
     }
 
+    /* Keep modal responsive adjustments */
     .modal-content {
         width: 90%;
         padding: 1.5rem 1rem;
@@ -506,6 +518,7 @@ button:disabled {
 
     #promotionOptions {
         flex-wrap: wrap; /* Allow wrapping if needed */
+        justify-content: center; /* Center wrapped items */
     }
      .promotionChoice {
         font-size: 2rem;
@@ -516,5 +529,12 @@ button:disabled {
     #connection-info, #game-id-corner {
         font-size: 0.7rem;
         padding: 0.3rem 0.6rem;
+        top: 5px; /* Adjust position slightly */
     }
+    #connection-info { left: 5px; }
+    #game-id-corner { right: 5px; }
 }
+
+/* Remove other breakpoints for simplicity */
+/* @media (min-width: 601px) and (max-width: 1024px) { ... } */
+/* @media (min-width: 1025px) { ... } */
