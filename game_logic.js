@@ -367,3 +367,48 @@ function hasValidMoves(boardState, color, currentEnPassantSquare, currentCastlin
     }
     return false; // No valid moves found
 }
+
+// Generates a unique string hash for a given position state
+// Used for detecting repetitions (threefold repetition)
+function generatePositionHash(boardState, turn, castlingRights, enPassantSquare) {
+    let hash = '';
+
+    // 1. Board State
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const pieceData = boardState[r]?.[c];
+            if (pieceData && pieceData.piece) {
+                // Use standard FEN notation pieces (uppercase white, lowercase black)
+                hash += pieceData.color === 'white' ? pieceData.piece.toUpperCase() : pieceData.piece.toLowerCase();
+            } else {
+                hash += '.'; // Placeholder for empty square
+            }
+        }
+        hash += '/'; // Separator for rows
+    }
+
+    // 2. Active Turn
+    hash += '-' + turn.charAt(0); // 'w' or 'b'
+
+    // 3. Castling Availability
+    hash += '-';
+    let castlingStr = '';
+    if (castlingRights.white.kingSide) castlingStr += 'K';
+    if (castlingRights.white.queenSide) castlingStr += 'Q';
+    if (castlingRights.black.kingSide) castlingStr += 'k';
+    if (castlingRights.black.queenSide) castlingStr += 'q';
+    hash += castlingStr || '-'; // Use '-' if no rights
+
+    // 4. En Passant Target Square
+    hash += '-';
+    if (enPassantSquare && enPassantSquare.length === 2) {
+        // Convert [row, col] to algebraic notation (e.g., [3, 4] -> e5)
+        const file = String.fromCharCode('a'.charCodeAt(0) + enPassantSquare[1]);
+        const rank = 8 - enPassantSquare[0];
+        hash += file + rank;
+    } else {
+        hash += '-'; // Placeholder if no EP square
+    }
+
+    return hash;
+}
