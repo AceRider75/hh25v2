@@ -71,6 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const multiplayerControls = document.getElementById('multiplayer-controls');
     const undoBtn = document.getElementById('undoMoveBtn');
     const redoBtn = document.getElementById('redoMoveBtn');
+    // Add reference for the corner display
+    const gameIdCornerValue = document.getElementById('game-id-corner-value');
 
     // Function to clear valid move highlights (UI only)
     function clearValidMoves() {
@@ -133,7 +135,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sets up the initial view state (Multiplayer controls visible)
     function initializeView() {
         if (boardElement) boardElement.innerHTML = '';
-        if (gameIdDisplay) gameIdDisplay.textContent = '';
+        if (gameIdDisplay) gameIdDisplay.textContent = ''; // Clear center display
+        if (gameIdCornerValue) gameIdCornerValue.textContent = 'N/A'; // Clear corner display
         if (statusElement) statusElement.textContent = "Create or Join a Game";
         if (multiplayerControls) multiplayerControls.style.display = 'block';
         if (boardElement) boardElement.style.display = 'none';
@@ -201,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gameRef.set(initialGameState).then(() => {
             console.log(`Game created with ID: ${currentGameId}`);
             if (gameIdDisplay) gameIdDisplay.textContent = `Game ID: ${currentGameId} (Share this!)`;
+            if (gameIdCornerValue) gameIdCornerValue.textContent = currentGameId; // Update corner display
             if (statusElement) statusElement.textContent = "Waiting for opponent...";
             if (multiplayerControls) multiplayerControls.style.display = 'none';
             setupBoardDOM(); // Create squares
@@ -246,6 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.log(`Joined game ${currentGameId} as black.`);
                         if (statusElement) statusElement.textContent = "Connected! Loading game...";
                         if (gameIdDisplay) gameIdDisplay.textContent = `Game ID: ${currentGameId}`;
+                        if (gameIdCornerValue) gameIdCornerValue.textContent = currentGameId; // Update corner display
                         if (multiplayerControls) multiplayerControls.style.display = 'none';
                         setupBoardDOM();
                         currentBoardState = gameState.board; // Set local state from fetched data
@@ -322,6 +327,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selectedPiece && turn !== playerColor) {
                  deselectPiece();
              }
+
+            // Ensure corner display remains updated (in case of page refresh joining existing game)
+            if (gameIdCornerValue && currentGameId) {
+                gameIdCornerValue.textContent = currentGameId;
+            }
 
         }, (error) => {
             console.error("Firebase listener error:", error);
