@@ -5,6 +5,26 @@
 // and contain core chess rules. They should be pure functions
 // as much as possible, taking state as input.
 
+// Generates a unique string representation of the position
+// Includes board state, turn, castling rights, and en passant square
+function generatePositionHash(boardState, turn, castlingRights, enPassantSquare) {
+    let hash = '';
+    // Board state part
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const piece = boardState[r]?.[c];
+            hash += (piece?.piece ? `${piece.color[0]}${piece.piece[0]}` : '.');
+        }
+    }
+    // Turn part
+    hash += `:${turn[0]}`;
+    // Castling rights part (consistent order)
+    hash += `:${castlingRights.white.kingSide ? 'K' : '-'}${castlingRights.white.queenSide ? 'Q' : '-'}${castlingRights.black.kingSide ? 'k' : '-'}${castlingRights.black.queenSide ? 'q' : '-'}`;
+    // En passant part
+    hash += `:${enPassantSquare ? `${enPassantSquare[0]}${enPassantSquare[1]}` : '-'}`;
+    return hash;
+}
+
 // Generates the initial board state array
 function getInitialBoardStateArray() {
     let boardState = Array(8).fill(null).map(() => Array(8).fill({ piece: null, color: null, moved: false }));
