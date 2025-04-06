@@ -117,14 +117,18 @@ body {
     flex-direction: column; /* Stack vertically */
     align-items: center;
     gap: 0.8rem;
+    width: 100%;
 }
 
 #multiplayer-controls .button-group {
     display: flex;
     gap: 0.8rem;
+    width: 100%;
     justify-content: center;
 }
-
+#multiplayer-controls .button-group button {
+    flex-grow: 1; /* Buttons share space */
+}
 
 
 input[type="text"] {
@@ -169,11 +173,14 @@ button {
     transition: background-color 0.3s, transform 0.1s;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    /* width: 100%; */ /* Removed */
-    /* max-width: 220px; */ /* Removed */
+    width: 100%; /* Default full width */
+    max-width: 220px; /* Max width */
 }
-
 /* Make grouped buttons not full width */
+#multiplayer-controls .button-group button {
+     width: auto;
+     max-width: none;
+}
 
 
 button:hover {
@@ -197,7 +204,6 @@ button:disabled {
 #matchmaking-controls #cancelSearchBtn:hover {
     background-color: #c3073f;
 }
-
 /* ========================================= */
 /*          Game Area & Board              */
 /* ========================================= */
