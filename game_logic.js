@@ -72,7 +72,8 @@ function isInCheck(boardState, color, currentEnPassantSquare, currentCastlingRig
 
 // simulateBoardMove: Operates on and returns a boardState array, handles 'moved' status
 // Needs currentEnPassantSquare to correctly simulate EP captures
-function simulateBoardMove(fromRow, fromCol, toRow, toCol, boardState, currentEnPassantSquare) {
+// Takes optional promotionPiece for handling pawn promotion choices
+function simulateBoardMove(fromRow, fromCol, toRow, toCol, boardState, currentEnPassantSquare, promotionPiece = null) {
     if (!boardState) {
         console.error("simulateBoardMove called with invalid boardState");
         return null; // Or throw error
@@ -125,10 +126,11 @@ function simulateBoardMove(fromRow, fromCol, toRow, toCol, boardState, currentEn
         }
     }
 
-    // Pawn Promotion Simulation (Auto-Queen for simulation)
+    // Pawn Promotion Simulation (Auto-Queen for simulation if no piece specified)
     if (pieceData.piece === 'pawn' && (toRow === 0 || toRow === 7)) {
-        simulatedBoard[toRow][toCol] = { piece: 'queen', color: pieceData.color, moved: true };
-        console.log("Simulated Pawn Promotion");
+        const finalPiece = promotionPiece || 'queen'; // Use choice or default to Queen
+        simulatedBoard[toRow][toCol] = { piece: finalPiece, color: pieceData.color, moved: true };
+        console.log(`Simulated Pawn Promotion to ${finalPiece}`);
     }
 
     return simulatedBoard;
