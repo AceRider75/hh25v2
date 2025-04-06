@@ -221,7 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Use getInitialBoardStateArray from game_logic.js
         const initialBoard = getInitialBoardStateArray();
         const initialCastlingRights = { 'white': { kingSide: true, queenSide: true }, 'black': { kingSide: true, queenSide: true } };
-        const initialPositionHash = generatePositionHash(initialBoard, 'white', initialCastlingRights, null);
 
         const initialGameState = {
             board: initialBoard,
@@ -229,9 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
             castlingRights: initialCastlingRights,
             enPassantSquare: null,
             players: { white: true, black: null },
-            status: 'waiting',
-            halfMoveClock: 0, // For fifty-move rule
-            positionHashes: { [initialPositionHash]: 1 } // Store count of starting position
+            status: 'waiting'
         };
 
         if (createGameBtn) createGameBtn.disabled = true;
