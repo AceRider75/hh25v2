@@ -384,8 +384,11 @@ function generatePositionHash(boardState, turn, castlingRights, enPassantSquare)
                 hash += '.'; // Placeholder for empty square
             }
         }
-        hash += '/'; // Separator for rows
+        hash += '_'; // Separator for rows (changed from '/')
     }
+
+    // Remove trailing separator
+    hash = hash.slice(0, -1);
 
     // 2. Active Turn
     hash += '-' + turn.charAt(0); // 'w' or 'b'
