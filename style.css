@@ -115,21 +115,16 @@ body {
 #matchmaking-controls {
     display: flex;
     flex-direction: column; /* Stack vertically */
-    align-items: center;
-    gap: 0.8rem;
-    width: 100%;
+    align-items: center; /* Center children (input, button-group) */
+    gap: 0.8rem; /* Restore gap */
 }
 
 #multiplayer-controls .button-group {
-    display: flex;
+    display: flex; /* Use flex for internal spacing */
     gap: 0.8rem;
-    width: 100%;
-    justify-content: center;
+    width: 100%; /* Make group take full width */
+    justify-content: center; /* Center buttons within the group */
 }
-#multiplayer-controls .button-group button {
-    flex-grow: 1; /* Buttons share space */
-}
-
 
 input[type="text"] {
     padding: 0.8rem 1rem;
@@ -173,14 +168,11 @@ button {
     transition: background-color 0.3s, transform 0.1s;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    width: 100%; /* Default full width */
-    max-width: 220px; /* Max width */
+    /* width: 100%; */ /* Removed */
+    /* max-width: 220px; */ /* Removed */
 }
+
 /* Make grouped buttons not full width */
-#multiplayer-controls .button-group button {
-     width: auto;
-     max-width: none;
-}
 
 
 button:hover {
@@ -314,60 +306,70 @@ button:disabled {
 /* ========================================= */
 
 .modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Higher z-index for modals */
     left: 0;
     top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(5px);
-    animation: fadeIn 0.3s ease-out;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0, 0, 0, 0.8); /* Darker overlay */
+    backdrop-filter: blur(3px); /* Optional: slightly blur background */
+    animation: fadeIn 0.3s ease-out; /* Keep fade-in */
 }
 
-@keyframes fadeIn {
+@keyframes fadeIn { /* Ensure keyframe is defined if used */
     from { opacity: 0; }
     to { opacity: 1; }
 }
 
-
 .modal-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: #2a2a2e; /* Dark background */
-    padding: 2rem;
-    border: 1px solid #444;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 350px;
-    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+    background-color: #2a2a2e; /* Dark background like controls */
+    color: #e0e0e0; /* Light text */
+    margin: 15% auto; /* Center vertically on larger screens */
+    padding: 20px;
+    border: 1px solid #444; /* Dark border */
+    width: fit-content; /* Adjust width to content */
+    max-width: 90%; /* Max width for small screens */
     text-align: center;
+    border-radius: 8px; /* Consistent border-radius */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); /* Consistent shadow */
+    position: relative; /* Needed for absolute positioning of close button if added */
 }
 
-.modal .close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    color: #aaa;
-    font-size: 1.8rem;
-    font-weight: bold;
+.modal-content h2 {
+    margin-top: 0;
+    color: #eee; /* Ensure heading is light */
+    margin-bottom: 1rem;
+}
+
+.promotion-choices button {
+    font-size: 2.5em; /* Make pieces large */
+    margin: 5px 10px;
+    padding: 5px 10px;
     cursor: pointer;
-    transition: color 0.2s;
+    background: #444; /* Darker button background */
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #e0e0e0; /* Light piece color */
+    width: 60px; /* Give fixed size */
+    height: 60px;
+    display: inline-flex; /* Use flex to center content */
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s, transform 0.1s;
 }
 
-.modal .close:hover,
-.modal .close:focus {
-    color: #fff;
-    text-decoration: none;
+.promotion-choices button:hover {
+    background-color: #555;
+}
+
+.promotion-choices button:active {
+    transform: scale(0.95);
 }
 
 /* Promotion Modal Specifics */
-
-
 #promotionModal p {
     margin-bottom: 1rem;
     font-size: 1.1rem;
@@ -404,7 +406,6 @@ button:disabled {
 .promotionChoice:active {
     transform: scale(0.95);
 }
-
 
 /* Checkmate Modal Specifics */
 #checkmateModal .modal-content {
@@ -474,7 +475,6 @@ button:disabled {
          width: 100%; /* Stacked buttons take full width */
     }
 
-
     #status {
         font-size: 0.9rem;
         padding: 0.4rem;
@@ -493,6 +493,7 @@ button:disabled {
     .modal-content {
         width: 90%;
         padding: 1.5rem 1rem;
+        margin: 10% auto; /* Adjust vertical centering for mobile */
     }
 
     #promotionOptions {
