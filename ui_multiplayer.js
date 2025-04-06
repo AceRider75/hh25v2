@@ -140,96 +140,65 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // --- Initialization ---
-
-    // Sets up the initial view state (Multiplayer controls visible)
+    // --- Initial Setup ---
     function initializeView() {
-        if (boardElement) boardElement.innerHTML = '';
-        if (gameIdDisplay) gameIdDisplay.textContent = '';
-        if (gameIdCornerValue) gameIdCornerValue.textContent = 'N/A';
-        if (statusElement) statusElement.textContent = "Create or Join a Game";
-
-        // Show controls, hide game
-        if (controlsContainer) controlsContainer.style.display = 'block';
-        if (gameContainer) gameContainer.style.display = 'none';
-        if (boardElement) boardElement.style.display = 'grid'; // Keep board grid ready but parent hidden
-
-        if (gameRef && gameListener) {
-            gameRef.off('value', gameListener);
-        }
-        gameRef = null;
-        gameListener = null;
-        currentGameId = null;
-        playerColor = null;
-        turn = 'white';
-        castlingRights = { 'white': { kingSide: true, queenSide: true }, 'black': { kingSide: true, queenSide: true } };
-        enPassantSquare = null;
-        currentBoardState = null;
-        gameStatus = 'pending';
-        selectedPiece = null; // Reset local UI selection
-
-        // Reset search state
-        isSearching = false;
-        if (myQueueEntryRef) {
-            myQueueEntryRef.remove(); // Ensure removed from queue if view resets
-            myQueueEntryRef = null;
-        }
-        if (queueListenerHandle) {
-            queueRef.off('value', queueListenerHandle);
-            queueListenerHandle = null;
-        }
-
-        // Reset button states
-        if (createGameBtn) createGameBtn.disabled = false;
-        if (joinGameBtn) joinGameBtn.disabled = false;
-        if (findMatchBtn) findMatchBtn.disabled = false;
-        if (cancelSearchBtn) cancelSearchBtn.style.display = 'none';
-        if (undoBtn) undoBtn.disabled = true;
-        if (redoBtn) redoBtn.disabled = true;
-
-        // Ensure event listeners are (re)attached
-        // Remove existing listeners first to prevent duplicates if view is re-initialized
-        if (createGameBtn) {
-             createGameBtn.removeEventListener('click', createGame); // Remove potential old listener
-             createGameBtn.addEventListener('click', createGame);
-        }
-        if (joinGameBtn) {
-            joinGameBtn.removeEventListener('click', joinGame);
-            joinGameBtn.addEventListener('click', joinGame);
-        }
-        if (findMatchBtn) {
-            findMatchBtn.removeEventListener('click', findMatch);
-            findMatchBtn.addEventListener('click', findMatch);
-        }
-        if (cancelSearchBtn) {
-            cancelSearchBtn.removeEventListener('click', cancelSearch);
-            cancelSearchBtn.addEventListener('click', cancelSearch);
-        }
-
         const gameControlsDiv = document.getElementById('gameControls');
         if (!gameControlsDiv) {
             console.error("Game controls container not found!");
             return;
         }
-        gameControlsDiv.innerHTML = ''; // Clear previous controls if any
+        gameControlsDiv.innerHTML = ''; // Clear previous controls
 
-        // Add event listeners for promotion choices
+        // --- Display Game ID and Copy Link (Original Logic) ---
+        // Ensure gameIdDisplay is declared before use
+        const gameIdDisplay = document.createElement('p');
+
+        if (currentGameId) {
+            gameIdDisplay.textContent = `Game ID: ${currentGameId}`;
+            gameControlsDiv.appendChild(gameIdDisplay);
+
+            const copyLinkBtn = document.createElement('button');
+            copyLinkBtn.textContent = 'Copy Invite Link';
+            copyLinkBtn.onclick = () => {
+                const inviteLink = `${window.location.origin}${window.location.pathname}?game=${currentGameId}`;
+                navigator.clipboard.writeText(inviteLink)
+                    .then(() => alert('Invite link copied!'))
+                    .catch(err => console.error('Failed to copy link: ', err));
+            };
+            gameControlsDiv.appendChild(copyLinkBtn);
+        } else {
+            // Show matchmaking controls if no game ID
+            const findGameBtn = document.createElement('button');
+            findGameBtn.textContent = 'Find Game';
+            findGameBtn.id = 'findGameBtn';
+            findGameBtn.addEventListener('click', findGame);
+            gameControlsDiv.appendChild(findGameBtn);
+
+            const statusDiv = document.createElement('div');
+            statusDiv.id = 'matchmakingStatus';
+            gameControlsDiv.appendChild(statusDiv);
+
+            const cancelSearchBtn = document.createElement('button');
+            cancelSearchBtn.textContent = 'Cancel Search';
+            cancelSearchBtn.id = 'cancelSearchBtn';
+            cancelSearchBtn.style.display = 'none'; // Initially hidden
+            cancelSearchBtn.addEventListener('click', cancelSearch);
+            gameControlsDiv.appendChild(cancelSearchBtn);
+        }
+
+        // --- Add event listeners for promotion choices ---
+        // This should happen after the main controls are potentially set up
         const promotionModal = document.getElementById('promotionModal');
         if (promotionModal) {
             const choices = promotionModal.querySelectorAll('.promotionChoice');
             choices.forEach(choice => {
-                // Remove existing listener to prevent duplicates if this runs multiple times
                 choice.removeEventListener('click', handlePromotionChoice);
-                // Add the new listener
                 choice.addEventListener('click', handlePromotionChoice);
             });
         } else {
-            console.error("Promotion modal element not found!");
+            // This might be expected if the modal isn't always in the initial HTML
+            console.warn("Promotion modal element not found during initial view setup.");
         }
-
-        // Display game ID and copy link button (if applicable)
-        // ... (rest of the initializeView function remains the same)
-        const gameIdDisplay = document.createElement('p');
     }
 
     // --- Multiplayer Functions ---
