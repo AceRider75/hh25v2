@@ -4,8 +4,7 @@
 
 // --- Firebase Setup ---
 const firebaseConfig = {
-    apiKey: ${{ secrets.APIKEY }},
-//"AIzaSyB1O5S6aY_q_lujXPeoBlr0iBwj9yjVLBg"
+    apiKey: "AIzaSyB1O5S6aY_q_lujXPeoBlr0iBwj9yjVLBg",
     authDomain: "chess-454ff.firebaseapp.com",
     databaseURL: "https://chess-454ff-default-rtdb.firebaseio.com",
     projectId: "chess-454ff",
