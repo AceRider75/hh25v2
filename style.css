@@ -335,7 +335,7 @@ button:disabled {
 .modal-content {
     background-color: #2a2a2e; /* Dark background like controls */
     color: #e0e0e0; /* Light text */
-    margin: 15% auto;
+    margin: 15% auto; /* Center vertically on larger screens */
     padding: 20px;
     border: 1px solid #444; /* Dark border */
     width: fit-content; /* Adjust width to content */
@@ -378,8 +378,6 @@ button:disabled {
 }
 
 /* Promotion Modal Specifics */
-
-
 #promotionModal p {
     margin-bottom: 1rem;
     font-size: 1.1rem;
@@ -416,7 +414,6 @@ button:disabled {
 .promotionChoice:active {
     transform: scale(0.95);
 }
-
 
 /* Checkmate Modal Specifics */
 #checkmateModal .modal-content {
@@ -486,7 +483,6 @@ button:disabled {
          width: 100%; /* Stacked buttons take full width */
     }
 
-
     #status {
         font-size: 0.9rem;
         padding: 0.4rem;
@@ -505,6 +501,7 @@ button:disabled {
     .modal-content {
         width: 90%;
         padding: 1.5rem 1rem;
+        margin: 10% auto; /* Adjust vertical centering for mobile */
     }
 
     #promotionOptions {
@@ -521,4 +518,3 @@ button:disabled {
         padding: 0.3rem 0.6rem;
     }
 }
-
