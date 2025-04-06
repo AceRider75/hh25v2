@@ -49,6 +49,7 @@ let gameStatus = 'pending'; // 'pending', 'waiting', 'active', 'check', 'checkma
 
 // Local UI state
 let selectedPiece = null; // DOM element of the selected piece
+let pendingPromotionMove = null; // To store details { fromRow, fromCol, toRow, toCol }
 
 
 // --- DOM Elements ---
@@ -80,9 +81,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Matchmaking buttons
     const findMatchBtn = document.getElementById('findMatchBtn');
     const cancelSearchBtn = document.getElementById('cancelSearchBtn');
-    // Main containers
-    const controlsContainer = document.getElementById('controls-container');
-    const gameContainer = document.getElementById('game-container');
 
     // Function to clear valid move highlights (UI only)
     function clearValidMoves() {
@@ -140,64 +138,71 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // --- Initial Setup ---
+    // --- Initialization ---
+
+    // Sets up the initial view state (Multiplayer controls visible)
     function initializeView() {
-        const gameControlsDiv = document.getElementById('gameControls');
-        if (!gameControlsDiv) {
-            console.error("Game controls container not found!");
-            return;
+        if (boardElement) boardElement.innerHTML = '';
+        if (gameIdDisplay) gameIdDisplay.textContent = ''; // Clear center display
+        if (gameIdCornerValue) gameIdCornerValue.textContent = 'N/A'; // Clear corner display
+        if (statusElement) statusElement.textContent = "Create or Join a Game";
+        if (multiplayerControls) multiplayerControls.style.display = 'block';
+        if (boardElement) boardElement.style.display = 'none';
+
+        if (gameRef && gameListener) {
+            gameRef.off('value', gameListener);
         }
-        gameControlsDiv.innerHTML = ''; // Clear previous controls
+        gameRef = null;
+        gameListener = null;
+        currentGameId = null;
+        playerColor = null;
+        turn = 'white';
+        castlingRights = { 'white': { kingSide: true, queenSide: true }, 'black': { kingSide: true, queenSide: true } };
+        enPassantSquare = null;
+        currentBoardState = null;
+        gameStatus = 'pending';
+        selectedPiece = null; // Reset local UI selection
 
-        // --- Display Game ID and Copy Link (Original Logic) ---
-        // Ensure gameIdDisplay is declared before use
-        const gameIdDisplay = document.createElement('p');
+        // Reset search state
+        isSearching = false;
+        if (myQueueEntryRef) {
+            myQueueEntryRef.remove(); // Ensure removed from queue if view resets
+            myQueueEntryRef = null;
+        }
+        if (queueListenerHandle) {
+            queueRef.off('value', queueListenerHandle);
+            queueListenerHandle = null;
+        }
 
-        if (currentGameId) {
-            gameIdDisplay.textContent = `Game ID: ${currentGameId}`;
-            gameControlsDiv.appendChild(gameIdDisplay);
+        // Reset button states
+        if (createGameBtn) createGameBtn.disabled = false;
+        if (joinGameBtn) joinGameBtn.disabled = false;
+        if (findMatchBtn) findMatchBtn.disabled = false;
+        if (cancelSearchBtn) cancelSearchBtn.style.display = 'none';
+        if (multiplayerControls) multiplayerControls.style.display = 'block'; // Show ID controls
+        if (document.getElementById('matchmaking-controls')) document.getElementById('matchmaking-controls').style.display = 'block'; // Show matchmaking controls
 
-            const copyLinkBtn = document.createElement('button');
-            copyLinkBtn.textContent = 'Copy Invite Link';
-            copyLinkBtn.onclick = () => {
-                const inviteLink = `${window.location.origin}${window.location.pathname}?game=${currentGameId}`;
-                navigator.clipboard.writeText(inviteLink)
-                    .then(() => alert('Invite link copied!'))
-                    .catch(err => console.error('Failed to copy link: ', err));
-            };
-            gameControlsDiv.appendChild(copyLinkBtn);
-        } else {
-            // Show matchmaking controls if no game ID
-            const findGameBtn = document.createElement('button');
-            findGameBtn.textContent = 'Find Game';
-            findGameBtn.id = 'findGameBtn';
-            findGameBtn.addEventListener('click', findGame);
-            gameControlsDiv.appendChild(findGameBtn);
+        // Disable undo/redo
+        if (undoBtn) undoBtn.disabled = true;
+        if (redoBtn) redoBtn.disabled = true;
 
-            const statusDiv = document.createElement('div');
-            statusDiv.id = 'matchmakingStatus';
-            gameControlsDiv.appendChild(statusDiv);
-
-            const cancelSearchBtn = document.createElement('button');
-            cancelSearchBtn.textContent = 'Cancel Search';
-            cancelSearchBtn.id = 'cancelSearchBtn';
-            cancelSearchBtn.style.display = 'none'; // Initially hidden
+        // Ensure event listeners are (re)attached
+        // Remove existing listeners first to prevent duplicates if view is re-initialized
+        if (createGameBtn) {
+             createGameBtn.removeEventListener('click', createGame); // Remove potential old listener
+             createGameBtn.addEventListener('click', createGame);
+        }
+        if (joinGameBtn) {
+            joinGameBtn.removeEventListener('click', joinGame);
+            joinGameBtn.addEventListener('click', joinGame);
+        }
+        if (findMatchBtn) {
+            findMatchBtn.removeEventListener('click', findMatch);
+            findMatchBtn.addEventListener('click', findMatch);
+        }
+        if (cancelSearchBtn) {
+            cancelSearchBtn.removeEventListener('click', cancelSearch);
             cancelSearchBtn.addEventListener('click', cancelSearch);
-            gameControlsDiv.appendChild(cancelSearchBtn);
-        }
-
-        // --- Add event listeners for promotion choices ---
-        // This should happen after the main controls are potentially set up
-        const promotionModal = document.getElementById('promotionModal');
-        if (promotionModal) {
-            const choices = promotionModal.querySelectorAll('.promotionChoice');
-            choices.forEach(choice => {
-                choice.removeEventListener('click', handlePromotionChoice);
-                choice.addEventListener('click', handlePromotionChoice);
-            });
-        } else {
-            // This might be expected if the modal isn't always in the initial HTML
-            console.warn("Promotion modal element not found during initial view setup.");
         }
     }
 
@@ -215,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Use getInitialBoardStateArray from game_logic.js
         const initialBoard = getInitialBoardStateArray();
         const initialCastlingRights = { 'white': { kingSide: true, queenSide: true }, 'black': { kingSide: true, queenSide: true } };
+        const initialPositionHash = generatePositionHash(initialBoard, 'white', initialCastlingRights, null);
 
         const initialGameState = {
             board: initialBoard,
@@ -222,21 +228,21 @@ document.addEventListener('DOMContentLoaded', () => {
             castlingRights: initialCastlingRights,
             enPassantSquare: null,
             players: { white: true, black: null },
-            status: 'waiting'
+            status: 'waiting',
+            halfMoveClock: 0, // For fifty-move rule
+            positionHashes: { [initialPositionHash]: 1 } // Store count of starting position
         };
 
         if (createGameBtn) createGameBtn.disabled = true;
         if (joinGameBtn) joinGameBtn.disabled = true;
-        if (findMatchBtn) findMatchBtn.disabled = true;
         if (statusElement) statusElement.textContent = "Creating game...";
 
         gameRef.set(initialGameState).then(() => {
             console.log(`Game created with ID: ${currentGameId}`);
             if (gameIdDisplay) gameIdDisplay.textContent = `Game ID: ${currentGameId} (Share this!)`;
             if (gameIdCornerValue) gameIdCornerValue.textContent = currentGameId; // Update corner display
-            if (controlsContainer) controlsContainer.style.display = 'none';
-            if (gameContainer) gameContainer.style.display = 'block';
             if (statusElement) statusElement.textContent = "Waiting for opponent...";
+            if (multiplayerControls) multiplayerControls.style.display = 'none';
             setupBoardDOM(); // Create squares
             currentBoardState = initialGameState.board; // Set local state
             reloadBoardState(currentBoardState); // Populate UI
@@ -246,7 +252,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (statusElement) statusElement.textContent = `Error creating game: ${error.message}. Check console/rules.`;
             if (createGameBtn) createGameBtn.disabled = false;
             if (joinGameBtn) joinGameBtn.disabled = false;
-            if (findMatchBtn) findMatchBtn.disabled = false;
             // Reset state on error
             currentGameId = null; playerColor = null; gameRef = null;
         });
@@ -261,7 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (createGameBtn) createGameBtn.disabled = true;
         if (joinGameBtn) joinGameBtn.disabled = true;
-        if (findMatchBtn) findMatchBtn.disabled = true;
         if (statusElement) statusElement.textContent = "Joining game...";
 
         const tempGameRef = database.ref('games/' + inputId);
@@ -280,11 +284,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     playerColor = 'black';
                     gameRef.update({ 'players/black': true, status: 'active' }).then(() => {
                         console.log(`Joined game ${currentGameId} as black.`);
-                        if (controlsContainer) controlsContainer.style.display = 'none';
-                        if (gameContainer) gameContainer.style.display = 'block';
-                        if (statusElement) statusElement.textContent = "Connected! White's turn.";
+                        if (statusElement) statusElement.textContent = "Connected! Loading game...";
                         if (gameIdDisplay) gameIdDisplay.textContent = `Game ID: ${currentGameId}`;
                         if (gameIdCornerValue) gameIdCornerValue.textContent = currentGameId; // Update corner display
+                        if (multiplayerControls) multiplayerControls.style.display = 'none';
                         setupBoardDOM();
                         currentBoardState = gameState.board; // Set local state from fetched data
                         reloadBoardState(currentBoardState);
@@ -295,7 +298,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         gameRef = null; currentGameId = null; playerColor = null;
                         if (createGameBtn) createGameBtn.disabled = false;
                         if (joinGameBtn) joinGameBtn.disabled = false;
-                        if (findMatchBtn) findMatchBtn.disabled = false;
                     });
                 } else {
                     if (statusElement) statusElement.textContent = "Game data incomplete. Cannot join.";
@@ -312,7 +314,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (statusElement) statusElement.textContent = "Error checking game ID. Check connection/ID.";
             if (createGameBtn) createGameBtn.disabled = false;
             if (joinGameBtn) joinGameBtn.disabled = false;
-            if (findMatchBtn) findMatchBtn.disabled = false;
         });
     }
 
@@ -327,9 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (joinGameBtn) joinGameBtn.disabled = true;
         if (findMatchBtn) findMatchBtn.disabled = true;
         if (cancelSearchBtn) cancelSearchBtn.style.display = 'inline-block';
-        // Use status element inside game container if available, else fallback
-        const statusDisplay = gameContainer?.querySelector('#status') || statusElement;
-        if (statusDisplay) statusDisplay.textContent = "Searching for opponent...";
+        if (statusElement) statusElement.textContent = "Searching for opponent...";
 
         // Add self to the queue (use push for unique ID)
         myQueueEntryRef = queueRef.push(true);
@@ -369,8 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (joinGameBtn) joinGameBtn.disabled = false;
         if (findMatchBtn) findMatchBtn.disabled = false;
         if (cancelSearchBtn) cancelSearchBtn.style.display = 'none';
-        const statusDisplay = gameContainer?.querySelector('#status') || statusElement;
-        if (statusDisplay) statusDisplay.textContent = "Search cancelled.";
+        if (statusElement) statusElement.textContent = "Search cancelled.";
     }
 
     // Callback for queue listener
@@ -462,12 +460,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`Starting matched game ${gameId} as ${playerColor}`);
 
         // Update UI
-        if (controlsContainer) controlsContainer.style.display = 'none';
-        if (gameContainer) gameContainer.style.display = 'block';
-        const statusDisplay = gameContainer?.querySelector('#status') || statusElement;
-        if (statusDisplay) statusDisplay.textContent = `Match found! Game starting as ${playerColor}...`;
+        if (statusElement) statusElement.textContent = `Match found! Game starting as ${playerColor}...`;
         if (gameIdDisplay) gameIdDisplay.textContent = `Game ID: ${currentGameId}`;
         if (gameIdCornerValue) gameIdCornerValue.textContent = currentGameId;
+        if (multiplayerControls) multiplayerControls.style.display = 'none'; // Hide ID controls
+        if (document.getElementById('matchmaking-controls')) document.getElementById('matchmaking-controls').style.display = 'none'; // Hide matchmaking
+        if (cancelSearchBtn) cancelSearchBtn.style.display = 'none'; // Ensure cancel is hidden
 
         // Fetch initial state to display board and start listening
         gameRef.get().then(snapshot => {
@@ -479,13 +477,13 @@ document.addEventListener('DOMContentLoaded', () => {
                  listenToGameUpdates(); // Start listening to the specific game
              } else {
                  console.error("Error: Game data not found after match was made.");
-                  if (statusDisplay) statusDisplay.textContent = "Error starting matched game.";
+                  if (statusElement) statusElement.textContent = "Error starting matched game.";
                  // Consider going back to initial view
                  initializeView();
              }
         }).catch(error => {
             console.error("Error fetching game state after match:", error);
-             if (statusDisplay) statusDisplay.textContent = "Error fetching matched game data.";
+             if (statusElement) statusElement.textContent = "Error fetching matched game data.";
             initializeView();
         });
     }
@@ -580,38 +578,19 @@ document.addEventListener('DOMContentLoaded', () => {
             reloadBoardState(currentBoardState); // Update board visuals
             updateStatusText(gameState); // Update text status
 
-            // Get promotion modal element
-            const promotionModal = document.getElementById('promotionModal');
-
-            // Handle UI changes for game end/special states
+            // Handle UI changes for check/checkmate/stalemate
             clearCheckHighlight();
-            if (promotionModal) promotionModal.style.display = 'none'; // Hide modal by default
-
-            if (gameStatus === 'promoting' && turn === playerColor) {
-                // Show promotion modal for the current player
-                console.log("Showing promotion modal for", playerColor);
-                if (promotionModal) {
-                    // Show only pieces of the correct color
-                    document.querySelectorAll('#promotionOptions .promotionChoice').forEach(btn => {
-                        btn.style.display = btn.classList.contains(playerColor) ? 'flex' : 'none';
-                    });
-                    promotionModal.style.display = 'flex'; // Show the modal
-                } else {
-                    console.error("Promotion modal element not found!");
-                }
-            } else if (gameStatus === 'check') {
+            if (gameStatus === 'check') {
                 highlightCheckedKing(turn); // Highlight the king whose turn it is
             } else if (gameStatus === 'checkmate') {
                 const winner = turn === 'white' ? 'Black' : 'White';
                 showCheckmateModal(`${winner} wins by Checkmate!`, '');
-            } else if (gameStatus === 'stalemate' || gameStatus.startsWith('draw_')) {
-                // Status text updated by updateStatusText, maybe add modal later
-                 console.log("Game ended in a draw:", gameStatus);
+            } else if (gameStatus === 'stalemate') {
+                if (statusElement) statusElement.textContent = "Stalemate! It's a draw.";
             }
 
             // Deselect piece if it's no longer the local player's turn
-            // (Don't deselect if waiting for promotion choice)
-            if (selectedPiece && turn !== playerColor && gameStatus !== 'promoting') {
+            if (selectedPiece && turn !== playerColor) {
                  deselectPiece();
              }
 
@@ -861,8 +840,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const pieceType = pieceData.piece;
         const pieceColor = pieceData.color;
 
-        // --- Simulate move locally to get the *next* state ---
-        let nextBoardState = simulateBoardMove(fromRow, fromCol, toRow, toCol, boardBeforeMove, enPassantSquare);
+        // --- Check for Pawn Promotion --- 
+        const isPromotion = pieceType === 'pawn' && (toRow === 0 || toRow === 7);
+
+        if (isPromotion) {
+            console.log("Pawn promotion move detected.");
+            pendingPromotionMove = { fromRow, fromCol, toRow, toCol };
+            // Deselect piece visually, but keep pending move data
+            deselectPiece(); 
+            showPromotionDialog(pieceColor); // Pass color to show correct piece icons
+            return; // Stop execution here, wait for user choice
+        }
+
+        // --- Simulate move locally to get the *next* state (for non-promotion moves) ---
+        // We pass null for promotionPiece here, as it's not a promotion move
+        let nextBoardState = simulateBoardMove(fromRow, fromCol, toRow, toCol, boardBeforeMove, enPassantSquare, null);
         let nextEnPassantSquare = null;
         let nextCastlingRights = JSON.parse(JSON.stringify(castlingRights));
 
@@ -897,79 +889,53 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Declare variables that will be used throughout the function
-        let nextTurn;
+        // 3. Determine next turn
+        const nextTurn = turn === 'white' ? 'black' : 'white';
+
+        // 4. Check for Check, Checkmate, Stalemate for the *next* player on the *next* board state
+        // Pass the state *after* the move, and the EP/Castling state *for the next turn*
         let nextGameStatus = 'active';
+        const isNextPlayerInCheck = isInCheck(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights);
 
-        // 3. Check for Pawn Promotion
-        let isPromotionMove = false;
-        if (pieceType === 'pawn' && (toRow === 0 || toRow === 7)) {
-             console.log("Pawn promotion detected at", toRow, toCol);
-             isPromotionMove = true;
-             // Don't change the board state yet
-        }
-
-        // 4. Determine next turn based on promotion status
-        nextTurn = isPromotionMove ? turn : (turn === 'white' ? 'black' : 'white');
-
-        // 5. Check for Check, Checkmate, Stalemate for the *next* player on the *next* board state
-        // Only check if not promoting
-        if (!isPromotionMove) {
-            const isNextPlayerInCheck = isInCheck(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights);
-            const nextPlayerHasMoves = hasValidMoves(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights);
-
-            if (!nextPlayerHasMoves) {
-                nextGameStatus = isNextPlayerInCheck ? 'checkmate' : 'stalemate';
-            } else if (isNextPlayerInCheck) {
+        if (isNextPlayerInCheck) {
+            // Pass state relevant for next player's move options
+            if (!hasValidMoves(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights)) {
+                nextGameStatus = 'checkmate';
+            } else {
                 nextGameStatus = 'check';
             }
         } else {
-            nextGameStatus = 'promoting';
+             // Pass state relevant for next player's move options
+             if (!hasValidMoves(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights)) {
+                 nextGameStatus = 'stalemate';
+             } else {
+                 nextGameStatus = 'active';
+             }
         }
 
-        // --- Calculate Draw-Related State Updates ---
-        let nextHalfMoveClock = currentHalfMoveClock + 1;
-        // Reuse capturedPieceData declared earlier
-        if (pieceType === 'pawn' || (capturedPieceData && capturedPieceData.piece)) {
-            nextHalfMoveClock = 0;
-        }
-        const newPositionHash = generatePositionHash(nextBoardState, nextTurn, nextCastlingRights, nextEnPassantSquare);
-        const nextPositionHashes = { ...currentPositionHashes };
-        nextPositionHashes[newPositionHash] = (nextPositionHashes[newPositionHash] || 0) + 1;
-
-        // Check for draws if game is still potentially active
-        if (nextGameStatus === 'active' || nextGameStatus === 'check') {
-            if (nextHalfMoveClock >= 100) {
-                nextGameStatus = 'draw_fifty_moves';
-            } else if (nextPositionHashes[newPositionHash] >= 3) {
-                nextGameStatus = 'draw_repetition';
-            }
-        }
-
-        // --- Construct the final game state object to send ---
+        // --- Construct the final game state object to send --- 
         const finalGameState = {
             board: nextBoardState,
             turn: nextTurn,
             castlingRights: nextCastlingRights,
             enPassantSquare: nextEnPassantSquare,
-            players: { white: true, black: true },
+            // Assume both players are present when a move is made
+            players: { white: true, black: true }, 
             status: nextGameStatus,
-            halfMoveClock: nextHalfMoveClock,
-            positionHashes: nextPositionHashes,
             lastMove: { 
                 from: [fromRow, fromCol], to: [toRow, toCol],
-                piece: pieceType, color: pieceColor,
+                piece: pieceType, // Original piece was pawn
+                color: pieceColor,
                 // Was this move a castle? (King move > 1 square)
-                castle: (pieceType === 'king' && Math.abs(fromCol - toCol) === 2)
-            },
-            // Conditionally add promotionSquare
-            ...(isPromotionMove && { promotionSquare: [toRow, toCol] })
+                castle: (pieceType === 'king' && Math.abs(fromCol - toCol) === 2),
+                promotion: null // Not a promotion move
+            }
         };
 
-        // --- Send to Firebase ---
+        // --- Send to Firebase --- 
         if (statusElement) statusElement.textContent = "Sending move...";
-        const localSelectedPiece = selectedPiece; // Store ref before deselecting
-        deselectPiece(); // Deselect UI immediately
+        // No need for localSelectedPiece here anymore as deselect happens earlier or not at all
+        // deselectPiece(); // Already called if promotion, otherwise handled by listener
 
         sendGameStateToFirebase(finalGameState)
             .then(() => {
@@ -980,92 +946,135 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("Error sending move to Firebase:", error);
                 if (statusElement) statusElement.textContent = `Error sending move: ${error.message}. Board might be out of sync.`;
                 // Maybe re-select locally to allow retry? Risky if state diverged.
-                // if (localSelectedPiece) selectPiece(localSelectedPiece);
             });
     }
 
-    // --- Promotion Choice Handler ---
-    function handlePromotionChoice(event) {
-        if (gameStatus !== 'promoting' || turn !== playerColor) {
-            console.warn("Promotion choice clicked when not allowed.");
+    // --- Promotion Dialog Logic ---
+
+    function showPromotionDialog(pieceColor) {
+        const modal = document.getElementById('promotionModal');
+        if (!modal) {
+            console.error("Promotion modal element (#promotionModal) not found in HTML.");
+            // Fallback or error handling needed - maybe auto-queen?
+            // For now, let's cancel the pending move if modal missing
+            pendingPromotionMove = null;
             return;
         }
 
-        const chosenPiece = event.target.closest('.promotionChoice').dataset.piece;
-        const promotionModal = document.getElementById('promotionModal');
-        if (promotionModal) promotionModal.style.display = 'none'; // Hide modal immediately
-
-        console.log(`Player ${playerColor} chose promotion to: ${chosenPiece}`);
-
-        // Get the promotion square from the current (synced) game state
-        const promoSq = gameState?.promotionSquare;
-        if (!promoSq || promoSq.length !== 2) {
-            console.error("Cannot promote: Promotion square data missing from game state.");
-            return; // Or revert to a safe state
-        }
-        const [promoRow, promoCol] = promoSq;
-
-        // Create the board state *after* the chosen promotion
-        let boardAfterPromotion = JSON.parse(JSON.stringify(currentBoardState));
-        boardAfterPromotion[promoRow][promoCol] = { piece: chosenPiece, color: playerColor, moved: true };
-
-        // Determine the *next* turn (opponent's turn)
-        const nextTurnAfterPromotion = playerColor === 'white' ? 'black' : 'white';
-
-        // Recalculate draw state (position hash)
-        // Half move clock remains 0 because pawn move occurred
-        const nextPositionHash = generatePositionHash(boardAfterPromotion, nextTurnAfterPromotion, castlingRights, null); // EP is null after promotion
-        const nextPositionHashes = { ...currentPositionHashes };
-        nextPositionHashes[nextPositionHash] = (nextPositionHashes[nextPositionHash] || 0) + 1;
-
-        // Recalculate check/checkmate/stalemate/draw for the opponent *after* the promotion
-        let nextStatusAfterPromotion = 'active';
-        const opponentHasMoves = hasValidMoves(boardAfterPromotion, nextTurnAfterPromotion, null, castlingRights); // EP is null
-        const isOpponentInCheck = isInCheck(boardAfterPromotion, nextTurnAfterPromotion, null, castlingRights);
-
-        if (!opponentHasMoves) {
-            nextStatusAfterPromotion = isOpponentInCheck ? 'checkmate' : 'stalemate';
-        } else if (isOpponentInCheck) {
-            nextStatusAfterPromotion = 'check';
-        }
-
-        // Check for draws (repetition - 50 move unlikely right after promotion)
-        if (nextStatusAfterPromotion === 'active' || nextStatusAfterPromotion === 'check') {
-             if (nextPositionHashes[newPositionHash] >= 3) {
-                 nextStatusAfterPromotion = 'draw_repetition';
-             }
-             // No need to check 50-move rule here (reset by pawn move)
-        }
-
-        // Construct the final state to send AFTER promotion choice
-        const finalGameStateAfterPromotion = {
-            board: boardAfterPromotion,
-            turn: nextTurnAfterPromotion,
-            castlingRights: castlingRights, // Remain unchanged from previous state
-            enPassantSquare: null, // Promotion clears EP
-            players: { white: true, black: true },
-            status: nextStatusAfterPromotion,
-            halfMoveClock: currentHalfMoveClock, // Keep the clock from the 'promoting' state
-            positionHashes: nextPositionHashes,
-            lastMove: gameState?.lastMove, // Keep last move data from pawn push
-            promotionSquare: null // Clear the promotion square info
+        const promotionPieces = { // Use lowercase piece names consistent with game logic
+            'q': 'queen',
+            'r': 'rook',
+            'b': 'bishop',
+            'n': 'knight'
         };
 
-        // Send the update to Firebase
-        if (statusElement) statusElement.textContent = "Processing promotion...";
-        sendGameStateToFirebase(finalGameStateAfterPromotion)
+        Object.keys(promotionPieces).forEach(key => {
+            const button = document.getElementById(`promote-${key}`);
+            const pieceType = promotionPieces[key];
+            if (button) {
+                button.textContent = pieces[pieceColor][pieceType]; // Use global pieces object
+                // Remove old listener before adding new one
+                button.replaceWith(button.cloneNode(true));
+                const newButton = document.getElementById(`promote-${key}`); // Get the new clone
+                newButton.addEventListener('click', () => handlePromotionChoice(pieceType));
+            } else {
+                console.warn(`Promotion button #promote-${key} not found.`);
+            }
+        });
+
+        modal.style.display = 'block';
+    }
+
+    function handlePromotionChoice(chosenPiece) {
+        const modal = document.getElementById('promotionModal');
+        if (modal) modal.style.display = 'none'; // Hide modal
+
+        if (!pendingPromotionMove) {
+            console.error("handlePromotionChoice called but no pendingPromotionMove found.");
+            return;
+        }
+
+        const { fromRow, fromCol, toRow, toCol } = pendingPromotionMove;
+        const pieceColor = playerColor; // The promoting player is the current player
+        pendingPromotionMove = null; // Clear pending move immediately
+
+        console.log(`User chose to promote to: ${chosenPiece}`);
+
+        // --- Re-simulate the move *with* the chosen piece --- 
+        const boardBeforeMove = currentBoardState;
+        let nextBoardState = simulateBoardMove(fromRow, fromCol, toRow, toCol, boardBeforeMove, enPassantSquare, chosenPiece);
+        
+        // --- Calculate subsequent game state (similar to makeMove) ---
+        // Promotion moves cannot set up En Passant for the next turn
+        const nextEnPassantSquare = null; 
+        
+        // Promotion moves don't affect castling rights directly (pawn != king/rook)
+        // But need to inherit current rights correctly.
+        let nextCastlingRights = JSON.parse(JSON.stringify(castlingRights));
+        
+        // Check for capture of opponent's rook on its starting square (edge case)
+        const capturedPieceData = boardBeforeMove[toRow]?.[toCol]; 
+        if (capturedPieceData && capturedPieceData.piece === 'rook' && capturedPieceData.color !== pieceColor) {
+            const opponentColor = capturedPieceData.color;
+            const opponentRookRow = (opponentColor === 'white' ? 7 : 0);
+            if (toRow === opponentRookRow) {
+                if (toCol === 0) nextCastlingRights[opponentColor].queenSide = false;
+                else if (toCol === 7) nextCastlingRights[opponentColor].kingSide = false;
+            }
+        }
+
+        const nextTurn = turn === 'white' ? 'black' : 'white';
+
+        let nextGameStatus = 'active';
+        const isNextPlayerInCheck = isInCheck(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights);
+
+        if (isNextPlayerInCheck) {
+            if (!hasValidMoves(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights)) {
+                nextGameStatus = 'checkmate';
+            } else {
+                nextGameStatus = 'check';
+            }
+        } else {
+             if (!hasValidMoves(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights)) {
+                 nextGameStatus = 'stalemate';
+             } else {
+                 nextGameStatus = 'active';
+             }
+        }
+
+        // --- Construct the final game state object to send --- 
+        const finalGameState = {
+            board: nextBoardState,
+            turn: nextTurn,
+            castlingRights: nextCastlingRights,
+            enPassantSquare: nextEnPassantSquare,
+            players: { white: true, black: true }, 
+            status: nextGameStatus,
+            lastMove: { 
+                from: [fromRow, fromCol], 
+                to: [toRow, toCol],
+                piece: 'pawn', // Original piece was a pawn
+                color: pieceColor,
+                castle: false, // Cannot castle with promotion
+                promotion: chosenPiece // Store the chosen piece
+            }
+        };
+
+        // --- Send to Firebase --- 
+        if (statusElement) statusElement.textContent = "Sending move...";
+        sendGameStateToFirebase(finalGameState)
             .then(() => {
-                console.log("Promotion update sent successfully.");
-                // Listener will handle UI update
+                console.log("Promotion move successfully sent to Firebase.");
             })
             .catch(error => {
-                console.error("Error sending promotion update:", error);
-                if (statusElement) statusElement.textContent = `Error promoting: ${error.message}`;
+                console.error("Error sending promotion move to Firebase:", error);
+                if (statusElement) statusElement.textContent = `Error sending move: ${error.message}. Board might be out of sync.`;
+                // Potentially need UI feedback or retry mechanism here
             });
     }
 
     // --- Initial Setup ---
-    initializeView();
+    initializeView(); // Set up multiplayer controls view
 
     // --- Firebase Presence Logic ---
     const onlineCountElement = document.getElementById('online-count');
