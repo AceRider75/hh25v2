@@ -21,10 +21,12 @@ if (!firebase.apps.length) {
 }
 const database = firebase.database();
 
-// --- Reference to Firebase Presence node ---
-const presenceRef = database.ref(".info/connected"); // Built-in connection status
-const userListRef = database.ref("presence"); // Node to store online users
-let currentUserRef = null; // Reference to the current user's entry in presence
+// --- References ---
+const presenceRef = database.ref(".info/connected");
+const userListRef = database.ref("presence");
+const queueRef = database.ref("queue"); // Reference to the matchmaking queue
+let currentUserRef = null;
+let myQueueEntryRef = null; // Reference to my entry in the queue
 
 
 // --- Global Variables (UI/Multiplayer State) ---
@@ -32,6 +34,8 @@ let currentGameId = null;
 let playerColor = null; // 'white' or 'black' for the current browser session
 let gameRef = null; // Firebase reference to the current game
 let gameListener = null; // Firebase listener handle
+let queueListenerHandle = null; // Handle for the queue listener
+let isSearching = false; // Track if the player is currently searching
 
 // State synced from Firebase via listener
 let turn = 'white';
@@ -73,6 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const redoBtn = document.getElementById('redoMoveBtn');
     // Add reference for the corner display
     const gameIdCornerValue = document.getElementById('game-id-corner-value');
+    // Matchmaking buttons
+    const findMatchBtn = document.getElementById('findMatchBtn');
+    const cancelSearchBtn = document.getElementById('cancelSearchBtn');
 
     // Function to clear valid move highlights (UI only)
     function clearValidMoves() {
@@ -155,9 +162,28 @@ document.addEventListener('DOMContentLoaded', () => {
         gameStatus = 'pending';
         selectedPiece = null; // Reset local UI selection
 
-        // Re-enable multiplayer buttons if they exist
+        // Reset search state
+        isSearching = false;
+        if (myQueueEntryRef) {
+            myQueueEntryRef.remove(); // Ensure removed from queue if view resets
+            myQueueEntryRef = null;
+        }
+        if (queueListenerHandle) {
+            queueRef.off('value', queueListenerHandle);
+            queueListenerHandle = null;
+        }
+
+        // Reset button states
         if (createGameBtn) createGameBtn.disabled = false;
         if (joinGameBtn) joinGameBtn.disabled = false;
+        if (findMatchBtn) findMatchBtn.disabled = false;
+        if (cancelSearchBtn) cancelSearchBtn.style.display = 'none';
+        if (multiplayerControls) multiplayerControls.style.display = 'block'; // Show ID controls
+        if (document.getElementById('matchmaking-controls')) document.getElementById('matchmaking-controls').style.display = 'block'; // Show matchmaking controls
+
+        // Disable undo/redo
+        if (undoBtn) undoBtn.disabled = true;
+        if (redoBtn) redoBtn.disabled = true;
 
         // Ensure event listeners are (re)attached
         // Remove existing listeners first to prevent duplicates if view is re-initialized
@@ -169,10 +195,14 @@ document.addEventListener('DOMContentLoaded', () => {
             joinGameBtn.removeEventListener('click', joinGame);
             joinGameBtn.addEventListener('click', joinGame);
         }
-
-        // Disable undo/redo
-        if (undoBtn) undoBtn.disabled = true;
-        if (redoBtn) redoBtn.disabled = true;
+        if (findMatchBtn) {
+            findMatchBtn.removeEventListener('click', findMatch);
+            findMatchBtn.addEventListener('click', findMatch);
+        }
+        if (cancelSearchBtn) {
+            cancelSearchBtn.removeEventListener('click', cancelSearch);
+            cancelSearchBtn.addEventListener('click', cancelSearch);
+        }
     }
 
     // --- Multiplayer Functions ---
@@ -278,6 +308,231 @@ document.addEventListener('DOMContentLoaded', () => {
             if (statusElement) statusElement.textContent = "Error checking game ID. Check connection/ID.";
             if (createGameBtn) createGameBtn.disabled = false;
             if (joinGameBtn) joinGameBtn.disabled = false;
+        });
+    }
+
+    function findMatch() {
+        if (isSearching || currentGameId) return; // Don't search if already searching or in game
+
+        console.log("Finding match...");
+        isSearching = true;
+
+        // Disable other buttons
+        if (createGameBtn) createGameBtn.disabled = true;
+        if (joinGameBtn) joinGameBtn.disabled = true;
+        if (findMatchBtn) findMatchBtn.disabled = true;
+        if (cancelSearchBtn) cancelSearchBtn.style.display = 'inline-block';
+        if (statusElement) statusElement.textContent = "Searching for opponent...";
+
+        // Add self to the queue (use push for unique ID)
+        myQueueEntryRef = queueRef.push(true);
+        // Make sure to remove self from queue if connection drops during search
+        myQueueEntryRef.onDisconnect().remove();
+
+        // Listen to the queue for potential matches
+        queueListenerHandle = queueRef.on('value', handleQueueUpdate);
+    }
+
+    function cancelSearch() {
+        if (!isSearching) return;
+
+        console.log("Canceling search...");
+        isSearching = false;
+
+        // Remove self from queue
+        if (myQueueEntryRef) {
+            myQueueEntryRef.onDisconnect().cancel(); // Cancel the onDisconnect handler
+            myQueueEntryRef.remove();
+            myQueueEntryRef = null;
+        }
+
+        // Stop listening to the queue
+        if (queueListenerHandle) {
+            queueRef.off('value', queueListenerHandle);
+            queueListenerHandle = null;
+        }
+
+        // Reset UI
+        if (createGameBtn) createGameBtn.disabled = false;
+        if (joinGameBtn) joinGameBtn.disabled = false;
+        if (findMatchBtn) findMatchBtn.disabled = false;
+        if (cancelSearchBtn) cancelSearchBtn.style.display = 'none';
+        if (statusElement) statusElement.textContent = "Search cancelled.";
+    }
+
+    // Callback for queue listener
+    function handleQueueUpdate(snapshot) {
+        if (!isSearching || !myQueueEntryRef) return; // Only process if currently searching
+
+        const queue = snapshot.val();
+        const myId = myQueueEntryRef.key; // My unique ID in the queue
+        let opponentId = null;
+
+        // Find someone else in the queue
+        for (const id in queue) {
+            if (id !== myId) {
+                opponentId = id;
+                break;
+            }
+        }
+
+        if (opponentId) {
+            console.log("Opponent found:", opponentId);
+            isSearching = false; // Found a match, stop searching state
+
+            // Stop listening to the main queue immediately
+            if (queueListenerHandle) {
+                queueRef.off('value', queueListenerHandle);
+                queueListenerHandle = null;
+            }
+            // Cancel my onDisconnect handler since we found a match
+            myQueueEntryRef.onDisconnect().cancel();
+
+            // Try to claim the match (atomic transaction is safer but complex)
+            // Simple approach: Assume the first one to see the match creates it.
+            // To avoid race conditions where both create a game, let's use the IDs
+            // The player with the lexicographically smaller ID creates the game.
+            const opponentRef = queueRef.child(opponentId);
+
+            if (myId < opponentId) {
+                console.log("My ID is smaller, creating game...");
+                // I create the game
+                const newGameId = generateGameId();
+                const newGame = {
+                    board: getInitialBoardStateArray(),
+                    turn: 'white',
+                    castlingRights: { 'white': { kingSide: true, queenSide: true }, 'black': { kingSide: true, queenSide: true } },
+                    enPassantSquare: null,
+                    players: { white: myId, black: opponentId }, // Assign players by ID for now
+                    status: 'active', // Start active immediately
+                    matchmaking: { player1: myId, player2: opponentId } // Store matched IDs
+                };
+
+                database.ref('games/' + newGameId).set(newGame).then(() => {
+                    console.log("Game created from match:", newGameId);
+                    // Remove both players from queue
+                    myQueueEntryRef.remove();
+                    opponentRef.remove();
+                    myQueueEntryRef = null; // Clear local ref
+
+                    // Start the game locally as white
+                    startGameFromMatch(newGameId, 'white');
+
+                }).catch(error => {
+                    console.error("Failed to create game from match:", error);
+                    // Could potentially re-enter queue or notify user
+                    cancelSearch(); // Reset UI for now
+                });
+            } else {
+                console.log("Opponent ID is smaller, waiting for them to create game...");
+                // Opponent creates the game. We just need to wait for our queue entry to be removed,
+                // which implies the game was created and we should find it via another mechanism
+                // (or the game creator could write the gameId back to our queue entry - more complex).
+                // For simplicity, we'll rely on the opponent removing us. If they fail,
+                // we might need a timeout to cancel search.
+                 // *** We still need to remove our onDisconnect handler ***
+                 // Already cancelled above.
+                 // Keep local myQueueEntryRef for now, opponent should remove it.
+            }
+
+        } else {
+            console.log("No opponent found yet...");
+        }
+    }
+
+    // Called when a match is successfully made and game created/joined
+    function startGameFromMatch(gameId, assignedColor) {
+        currentGameId = gameId;
+        playerColor = assignedColor;
+        gameRef = database.ref('games/' + currentGameId);
+
+        console.log(`Starting matched game ${gameId} as ${playerColor}`);
+
+        // Update UI
+        if (statusElement) statusElement.textContent = `Match found! Game starting as ${playerColor}...`;
+        if (gameIdDisplay) gameIdDisplay.textContent = `Game ID: ${currentGameId}`;
+        if (gameIdCornerValue) gameIdCornerValue.textContent = currentGameId;
+        if (multiplayerControls) multiplayerControls.style.display = 'none'; // Hide ID controls
+        if (document.getElementById('matchmaking-controls')) document.getElementById('matchmaking-controls').style.display = 'none'; // Hide matchmaking
+        if (cancelSearchBtn) cancelSearchBtn.style.display = 'none'; // Ensure cancel is hidden
+
+        // Fetch initial state to display board and start listening
+        gameRef.get().then(snapshot => {
+             if (snapshot.exists()) {
+                 const gameState = snapshot.val();
+                 setupBoardDOM();
+                 currentBoardState = gameState.board;
+                 reloadBoardState(currentBoardState);
+                 listenToGameUpdates(); // Start listening to the specific game
+             } else {
+                 console.error("Error: Game data not found after match was made.");
+                  if (statusElement) statusElement.textContent = "Error starting matched game.";
+                 // Consider going back to initial view
+                 initializeView();
+             }
+        }).catch(error => {
+            console.error("Error fetching game state after match:", error);
+             if (statusElement) statusElement.textContent = "Error fetching matched game data.";
+            initializeView();
+        });
+    }
+
+    // Listen to own queue entry removal (for player 2)
+    // This is a workaround for player 2 finding the game
+    // A better way involves direct invites or writing gameId back.
+    function monitorMyQueueEntry() {
+        if (!myQueueEntryRef) return;
+        myQueueEntryRef.on('value', (snap) => {
+            if (!snap.exists() && !isSearching && !currentGameId) {
+                // My queue entry was removed, and I wasn't the one cancelling search, AND I'm not in a game.
+                // This implies player 1 created the game and removed me.
+                // I need to find the game I was put into.
+                console.log("My queue entry removed, likely matched. Trying to find game...");
+                findMyMatchedGame();
+            }
+        });
+    }
+
+    // Helper for Player 2 to find the game created by Player 1
+    function findMyMatchedGame() {
+        // This requires knowing my unique queue ID *after* it's created
+        const myId = myQueueEntryRef?.key; // Use optional chaining
+        if (!myId) {
+            console.error("Cannot find matched game: My queue ID is unknown.");
+            cancelSearch(); // Reset UI
+            return;
+        }
+
+        // Query games to find one where I am player 2
+        database.ref('games').orderByChild('matchmaking/player2').equalTo(myId).limitToFirst(1).get()
+        .then(snapshot => {
+            if (snapshot.exists()) {
+                let foundGameId = null;
+                snapshot.forEach(childSnap => { // Should only be one
+                    foundGameId = childSnap.key;
+                });
+                if (foundGameId) {
+                    console.log("Found matched game:", foundGameId);
+                    // Start the game locally as black
+                    // Need to ensure onDisconnect is cancelled for the queue ref
+                     if (myQueueEntryRef) {
+                         myQueueEntryRef.onDisconnect().cancel();
+                         // Don't remove it here, it was already removed by player 1
+                         myQueueEntryRef = null;
+                     }
+                    startGameFromMatch(foundGameId, 'black');
+                } else {
+                     console.log("Matchmaking race condition? Game not found where I am player 2.");
+                     cancelSearch(); // Reset UI
+                }
+            } else {
+                 console.log("Could not find game where I was matched as player 2.");
+                 cancelSearch(); // Reset UI
+            }
+        })
+        .catch(error => {
+            console.error("Error searching for matched game:", error);
+            cancelSearch(); // Reset UI
         });
     }
 
