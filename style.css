@@ -63,10 +63,11 @@ body {
 
 #board-container {
     width: 100%;
-    max-width: 60vh; /* Max size based on viewport height */
-    max-height: 80vw; /* Max size based on viewport width */
+    max-width: 560px; /* Reverted to fixed max-width */
+    /* max-height: 80vw; */ /* Removed */
+    aspect-ratio: 1 / 1; /* Ensure square */
     margin: 1rem auto; /* Center the board container */
-    position: relative; /* For potential overlays or effects */
+    position: relative;
 }
 
 
