@@ -45,9 +45,7 @@ let castlingRights = { // Synced from Firebase, used by game logic
     'black': { kingSide: true, queenSide: true }
 };
 let currentBoardState = null; // Holds the board state array synced from Firebase
-let currentHalfMoveClock = 0; // For fifty-move rule
-let currentPositionHashes = {}; // Map of position hashes {hash: count}
-let gameStatus = 'pending'; // 'pending', 'waiting', 'active', 'check', 'checkmate', 'stalemate', 'draw_...'
+let gameStatus = 'pending'; // 'pending', 'waiting', 'active', 'check', 'checkmate', 'stalemate'
 
 // Local UI state
 let selectedPiece = null; // DOM element of the selected piece
@@ -161,8 +159,6 @@ document.addEventListener('DOMContentLoaded', () => {
         castlingRights = { 'white': { kingSide: true, queenSide: true }, 'black': { kingSide: true, queenSide: true } };
         enPassantSquare = null;
         currentBoardState = null;
-        currentHalfMoveClock = 0;
-        currentPositionHashes = {};
         gameStatus = 'pending';
         selectedPiece = null; // Reset local UI selection
 
@@ -576,9 +572,6 @@ document.addEventListener('DOMContentLoaded', () => {
             enPassantSquare = gameState.enPassantSquare || null;
             currentBoardState = gameState.board;
             gameStatus = gameState.status || 'active';
-            // Update draw-related state, providing defaults if missing
-            currentHalfMoveClock = gameState.halfMoveClock || 0;
-            currentPositionHashes = gameState.positionHashes || {};
 
             // Update UI based on new state
             reloadBoardState(currentBoardState); // Update board visuals
@@ -836,9 +829,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Use the *synced* state as the basis for simulation
         const boardBeforeMove = currentBoardState;
         const pieceData = boardBeforeMove?.[fromRow]?.[fromCol];
-        // Get current draw-related state *before* the move using GLOBAL variables
-        // REMOVE: const currentHalfMoveClock = gameState?.halfMoveClock || 0;
-        // REMOVE: const currentPositionHashes = gameState?.positionHashes || {};
 
         if (!pieceData || pieceData.color !== turn) {
              console.error("Trying to move wrong piece or empty square based on synced state.");
@@ -860,22 +850,22 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Setting next possible EP square:", nextEnPassantSquare);
         }
 
-        // 2. Simulate the basic piece move on the board state
-        nextBoardState[toRow][toCol] = { ...nextBoardState[fromRow][fromCol], moved: true }; // Mark as moved
-        nextBoardState[fromRow][fromCol] = { piece: null, color: null };
-
-        // Declare captured piece data ONCE, before checking castling/draw
-        const capturedPieceData = boardBeforeMove[toRow]?.[toCol]; // Piece data *before* move
-
-        // 3. Handle Castling Rook Move (if applicable)
-         let wasCastle = false;
-         // ... (castling simulation logic) ...
-
-        // 4. Update Castling Rights based on piece moved or captured
-        // ... (king move check) ...
-        // ... (rook move check) ...
-        
+        // 2. Update Castling Rights based on piece moved or captured
+        // King move
+        if (pieceType === 'king') {
+            nextCastlingRights[pieceColor].kingSide = false;
+            nextCastlingRights[pieceColor].queenSide = false;
+        }
+        // Rook move (check origin)
+        else if (pieceType === 'rook') {
+            const originalRookRow = (pieceColor === 'white' ? 7 : 0);
+            if (fromRow === originalRookRow) {
+                if (fromCol === 0) nextCastlingRights[pieceColor].queenSide = false;
+                else if (fromCol === 7) nextCastlingRights[pieceColor].kingSide = false;
+            }
+        }
         // Capture of opponent's rook on its starting square
+        const capturedPieceData = boardBeforeMove[toRow]?.[toCol]; // Piece data *before* move
         if (capturedPieceData && capturedPieceData.piece === 'rook' && capturedPieceData.color !== pieceColor) {
             const opponentColor = capturedPieceData.color;
             const opponentRookRow = (opponentColor === 'white' ? 7 : 0);
@@ -885,58 +875,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 5. Handle Pawn Promotion (Simpler for now: auto-queen)
-        // ... (promotion logic) ...
-
-        // 6. Determine next turn
+        // 3. Determine next turn
         const nextTurn = turn === 'white' ? 'black' : 'white';
 
-        // --- Calculate Draw-Related State Updates ---
-        // Use the global currentHalfMoveClock
-        let nextHalfMoveClock = currentHalfMoveClock + 1; 
-        // Reset clock on pawn move or capture
-        if (pieceType === 'pawn' || (capturedPieceData && capturedPieceData.piece)) {
-            nextHalfMoveClock = 0;
-        }
-
-        // Calculate new position hash *after* the move
-        const newPositionHash = generatePositionHash(nextBoardState, nextTurn, nextCastlingRights, nextEnPassantSquare);
-        // Create next position history map using global currentPositionHashes
-        const nextPositionHashes = { ...currentPositionHashes }; 
-        nextPositionHashes[newPositionHash] = (nextPositionHashes[newPositionHash] || 0) + 1;
-
-        // --- Check for Game End Conditions (Checkmate/Stalemate/Draw) ---
+        // 4. Check for Check, Checkmate, Stalemate for the *next* player on the *next* board state
+        // Pass the state *after* the move, and the EP/Castling state *for the next turn*
         let nextGameStatus = 'active';
-        const nextPlayerHasMoves = hasValidMoves(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights);
         const isNextPlayerInCheck = isInCheck(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights);
 
-        if (!nextPlayerHasMoves) {
-            if (isNextPlayerInCheck) {
+        if (isNextPlayerInCheck) {
+            // Pass state relevant for next player's move options
+            if (!hasValidMoves(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights)) {
                 nextGameStatus = 'checkmate';
             } else {
-                nextGameStatus = 'stalemate'; // Stalemate!
+                nextGameStatus = 'check';
             }
-        } else if (isNextPlayerInCheck) {
-            nextGameStatus = 'check';
-        }
-
-        // Check for draws *after* determining checkmate/stalemate
-        if (nextGameStatus === 'active' || nextGameStatus === 'check') { 
-            // Fifty-move rule (>= 100 half-moves)
-            if (nextHalfMoveClock >= 100) {
-                console.log("Draw by fifty-move rule");
-                nextGameStatus = 'draw_fifty_moves'; 
-            }
-            // Threefold repetition
-            else if (nextPositionHashes[newPositionHash] >= 3) {
-                console.log("Draw by threefold repetition");
-                nextGameStatus = 'draw_repetition';
-            }
-            // TODO: Check for insufficient material (needs a helper function)
-            // else if (isInsufficientMaterial(nextBoardState)) {
-            //     console.log("Draw by insufficient material");
-            //     nextGameStatus = 'draw_material';
-            // }
+        } else {
+             // Pass state relevant for next player's move options
+             if (!hasValidMoves(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights)) {
+                 nextGameStatus = 'stalemate';
+             } else {
+                 nextGameStatus = 'active';
+             }
         }
 
         // --- Construct the final game state object to send ---
@@ -945,13 +905,13 @@ document.addEventListener('DOMContentLoaded', () => {
             turn: nextTurn,
             castlingRights: nextCastlingRights,
             enPassantSquare: nextEnPassantSquare,
+            // Assume both players are present when a move is made
             players: { white: true, black: true }, 
-            status: nextGameStatus, // Updated status including draws
-            halfMoveClock: nextHalfMoveClock, // Send updated clock
-            positionHashes: nextPositionHashes, // Send updated hashes
+            status: nextGameStatus,
             lastMove: { 
                 from: [fromRow, fromCol], to: [toRow, toCol],
                 piece: pieceType, color: pieceColor,
+                // Was this move a castle? (King move > 1 square)
                 castle: (pieceType === 'king' && Math.abs(fromCol - toCol) === 2)
             }
         };
