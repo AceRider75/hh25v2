@@ -381,10 +381,10 @@ function generatePositionHash(boardState, turn, castlingRights, enPassantSquare)
                 // Use standard FEN notation pieces (uppercase white, lowercase black)
                 hash += pieceData.color === 'white' ? pieceData.piece.toUpperCase() : pieceData.piece.toLowerCase();
             } else {
-                hash += '.'; // Placeholder for empty square
+                hash += '1'; // Placeholder for empty square (changed from '.')
             }
         }
-        hash += '_'; // Separator for rows (changed from '/')
+        hash += '_'; // Separator for rows
     }
 
     // Remove trailing separator
