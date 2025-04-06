@@ -477,17 +477,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Listen to own queue entry removal (for player 2)
     // This is a workaround for player 2 finding the game
     // A better way involves direct invites or writing gameId back.
     function monitorMyQueueEntry() {
         if (!myQueueEntryRef) return;
+        // Detach previous listener if any to prevent duplicates
+        myQueueEntryRef.off('value'); 
         myQueueEntryRef.on('value', (snap) => {
-            if (!snap.exists() && !isSearching && !currentGameId) {
-                // My queue entry was removed, and I wasn't the one cancelling search, AND I'm not in a game.
-                // This implies player 1 created the game and removed me.
-                // I need to find the game I was put into.
-                console.log("My queue entry removed, likely matched. Trying to find game...");
+            // If my queue entry is gone, and I'm not already in a game, assume P1 matched me.
+            if (!snap.exists() && !currentGameId) { 
+                console.log("My queue entry removed, likely matched by Player 1. Trying to find game...");
+                // Stop listening to own entry now
+                myQueueEntryRef.off('value'); 
                 findMyMatchedGame();
             }
         });
