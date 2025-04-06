@@ -312,4 +312,18 @@ button:disabled {
     z-index: 3; /* Above valid move dot */
 }
 
+/* --- Matchmaking Controls Styles --- */
+#matchmaking-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
 
+#matchmaking-controls #cancelSearchBtn {
+    background-color: #dc3545; /* Red color */
+}
+
+#matchmaking-controls #cancelSearchBtn:hover {
+    background-color: #c82333;
+}
