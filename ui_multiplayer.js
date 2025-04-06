@@ -21,6 +21,11 @@ if (!firebase.apps.length) {
 }
 const database = firebase.database();
 
+// --- Reference to Firebase Presence node ---
+const presenceRef = database.ref(".info/connected"); // Built-in connection status
+const userListRef = database.ref("presence"); // Node to store online users
+let currentUserRef = null; // Reference to the current user's entry in presence
+
 
 // --- Global Variables (UI/Multiplayer State) ---
 let currentGameId = null;
@@ -656,5 +661,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initial Setup ---
     initializeView(); // Set up multiplayer controls view
+
+    // --- Firebase Presence Logic ---
+    const onlineCountElement = document.getElementById('online-count');
+
+    presenceRef.on("value", (snap) => {
+        if (snap.val() === true) {
+            // We're connected (or reconnected).
+            console.log("Firebase connected.");
+
+            // Add user to the presence list when connected.
+            currentUserRef = userListRef.push(true); // Push simple value, key is unique ID
+
+            // Remove user from the presence list when they disconnect.
+            currentUserRef.onDisconnect().remove();
+
+        } else {
+            // We're disconnected.
+            console.log("Firebase disconnected.");
+            // (onDisconnect handler should have removed the user)
+            // Optionally update UI to show disconnected status
+            if(onlineCountElement) onlineCountElement.textContent = '-';
+        }
+    });
+
+    // Listen for changes in the number of users in the presence list.
+    userListRef.on("value", (snap) => {
+        const count = snap.numChildren(); // Get number of online users
+        console.log("Online users:", count);
+        if (onlineCountElement) {
+            onlineCountElement.textContent = count;
+        }
+    });
 
 }); // End DOMContentLoaded
