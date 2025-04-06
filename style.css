@@ -224,6 +224,24 @@ button:disabled {
     transform: scale(0.95);
 }
 
+/* --- Connection Info Styles --- */
+#connection-info {
+    position: fixed; /* Position relative to the viewport */
+    top: 10px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black */
+    color: #fff; /* White text */
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    z-index: 1000; /* Ensure it's above other elements */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+#connection-info span {
+    font-weight: bold;
+}
+
 /* --- Multiplayer Controls Styles --- */
 
 #multiplayer-controls {
@@ -275,3 +293,4 @@ button:disabled {
     pointer-events: none;
     z-index: 3; /* Above valid move dot */
 }
+
