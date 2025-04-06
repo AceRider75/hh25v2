@@ -80,6 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Matchmaking buttons
     const findMatchBtn = document.getElementById('findMatchBtn');
     const cancelSearchBtn = document.getElementById('cancelSearchBtn');
+    // Main containers
+    const controlsContainer = document.getElementById('controls-container');
+    const gameContainer = document.getElementById('game-container');
 
     // Function to clear valid move highlights (UI only)
     function clearValidMoves() {
@@ -142,11 +145,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sets up the initial view state (Multiplayer controls visible)
     function initializeView() {
         if (boardElement) boardElement.innerHTML = '';
-        if (gameIdDisplay) gameIdDisplay.textContent = ''; // Clear center display
-        if (gameIdCornerValue) gameIdCornerValue.textContent = 'N/A'; // Clear corner display
+        if (gameIdDisplay) gameIdDisplay.textContent = '';
+        if (gameIdCornerValue) gameIdCornerValue.textContent = 'N/A';
         if (statusElement) statusElement.textContent = "Create or Join a Game";
-        if (multiplayerControls) multiplayerControls.style.display = 'block';
-        if (boardElement) boardElement.style.display = 'none';
+
+        // Show controls, hide game
+        if (controlsContainer) controlsContainer.style.display = 'block';
+        if (gameContainer) gameContainer.style.display = 'none';
+        if (boardElement) boardElement.style.display = 'grid'; // Keep board grid ready but parent hidden
 
         if (gameRef && gameListener) {
             gameRef.off('value', gameListener);
@@ -178,10 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (joinGameBtn) joinGameBtn.disabled = false;
         if (findMatchBtn) findMatchBtn.disabled = false;
         if (cancelSearchBtn) cancelSearchBtn.style.display = 'none';
-        if (multiplayerControls) multiplayerControls.style.display = 'block'; // Show ID controls
-        if (document.getElementById('matchmaking-controls')) document.getElementById('matchmaking-controls').style.display = 'block'; // Show matchmaking controls
-
-        // Disable undo/redo
         if (undoBtn) undoBtn.disabled = true;
         if (redoBtn) redoBtn.disabled = true;
 
@@ -234,14 +236,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (createGameBtn) createGameBtn.disabled = true;
         if (joinGameBtn) joinGameBtn.disabled = true;
+        if (findMatchBtn) findMatchBtn.disabled = true;
         if (statusElement) statusElement.textContent = "Creating game...";
 
         gameRef.set(initialGameState).then(() => {
             console.log(`Game created with ID: ${currentGameId}`);
             if (gameIdDisplay) gameIdDisplay.textContent = `Game ID: ${currentGameId} (Share this!)`;
             if (gameIdCornerValue) gameIdCornerValue.textContent = currentGameId; // Update corner display
+            if (controlsContainer) controlsContainer.style.display = 'none';
+            if (gameContainer) gameContainer.style.display = 'block';
             if (statusElement) statusElement.textContent = "Waiting for opponent...";
-            if (multiplayerControls) multiplayerControls.style.display = 'none';
             setupBoardDOM(); // Create squares
             currentBoardState = initialGameState.board; // Set local state
             reloadBoardState(currentBoardState); // Populate UI
@@ -251,6 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (statusElement) statusElement.textContent = `Error creating game: ${error.message}. Check console/rules.`;
             if (createGameBtn) createGameBtn.disabled = false;
             if (joinGameBtn) joinGameBtn.disabled = false;
+            if (findMatchBtn) findMatchBtn.disabled = false;
             // Reset state on error
             currentGameId = null; playerColor = null; gameRef = null;
         });
@@ -265,6 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (createGameBtn) createGameBtn.disabled = true;
         if (joinGameBtn) joinGameBtn.disabled = true;
+        if (findMatchBtn) findMatchBtn.disabled = true;
         if (statusElement) statusElement.textContent = "Joining game...";
 
         const tempGameRef = database.ref('games/' + inputId);
@@ -283,10 +289,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     playerColor = 'black';
                     gameRef.update({ 'players/black': true, status: 'active' }).then(() => {
                         console.log(`Joined game ${currentGameId} as black.`);
-                        if (statusElement) statusElement.textContent = "Connected! Loading game...";
+                        if (controlsContainer) controlsContainer.style.display = 'none';
+                        if (gameContainer) gameContainer.style.display = 'block';
+                        if (statusElement) statusElement.textContent = "Connected! White's turn.";
                         if (gameIdDisplay) gameIdDisplay.textContent = `Game ID: ${currentGameId}`;
                         if (gameIdCornerValue) gameIdCornerValue.textContent = currentGameId; // Update corner display
-                        if (multiplayerControls) multiplayerControls.style.display = 'none';
                         setupBoardDOM();
                         currentBoardState = gameState.board; // Set local state from fetched data
                         reloadBoardState(currentBoardState);
@@ -297,6 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         gameRef = null; currentGameId = null; playerColor = null;
                         if (createGameBtn) createGameBtn.disabled = false;
                         if (joinGameBtn) joinGameBtn.disabled = false;
+                        if (findMatchBtn) findMatchBtn.disabled = false;
                     });
                 } else {
                     if (statusElement) statusElement.textContent = "Game data incomplete. Cannot join.";
@@ -313,6 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (statusElement) statusElement.textContent = "Error checking game ID. Check connection/ID.";
             if (createGameBtn) createGameBtn.disabled = false;
             if (joinGameBtn) joinGameBtn.disabled = false;
+            if (findMatchBtn) findMatchBtn.disabled = false;
         });
     }
 
@@ -327,7 +336,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (joinGameBtn) joinGameBtn.disabled = true;
         if (findMatchBtn) findMatchBtn.disabled = true;
         if (cancelSearchBtn) cancelSearchBtn.style.display = 'inline-block';
-        if (statusElement) statusElement.textContent = "Searching for opponent...";
+        // Use status element inside game container if available, else fallback
+        const statusDisplay = gameContainer?.querySelector('#status') || statusElement;
+        if (statusDisplay) statusDisplay.textContent = "Searching for opponent...";
 
         // Add self to the queue (use push for unique ID)
         myQueueEntryRef = queueRef.push(true);
@@ -367,7 +378,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (joinGameBtn) joinGameBtn.disabled = false;
         if (findMatchBtn) findMatchBtn.disabled = false;
         if (cancelSearchBtn) cancelSearchBtn.style.display = 'none';
-        if (statusElement) statusElement.textContent = "Search cancelled.";
+        const statusDisplay = gameContainer?.querySelector('#status') || statusElement;
+        if (statusDisplay) statusDisplay.textContent = "Search cancelled.";
     }
 
     // Callback for queue listener
@@ -459,12 +471,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`Starting matched game ${gameId} as ${playerColor}`);
 
         // Update UI
-        if (statusElement) statusElement.textContent = `Match found! Game starting as ${playerColor}...`;
+        if (controlsContainer) controlsContainer.style.display = 'none';
+        if (gameContainer) gameContainer.style.display = 'block';
+        const statusDisplay = gameContainer?.querySelector('#status') || statusElement;
+        if (statusDisplay) statusDisplay.textContent = `Match found! Game starting as ${playerColor}...`;
         if (gameIdDisplay) gameIdDisplay.textContent = `Game ID: ${currentGameId}`;
         if (gameIdCornerValue) gameIdCornerValue.textContent = currentGameId;
-        if (multiplayerControls) multiplayerControls.style.display = 'none'; // Hide ID controls
-        if (document.getElementById('matchmaking-controls')) document.getElementById('matchmaking-controls').style.display = 'none'; // Hide matchmaking
-        if (cancelSearchBtn) cancelSearchBtn.style.display = 'none'; // Ensure cancel is hidden
 
         // Fetch initial state to display board and start listening
         gameRef.get().then(snapshot => {
@@ -476,13 +488,13 @@ document.addEventListener('DOMContentLoaded', () => {
                  listenToGameUpdates(); // Start listening to the specific game
              } else {
                  console.error("Error: Game data not found after match was made.");
-                  if (statusElement) statusElement.textContent = "Error starting matched game.";
+                  if (statusDisplay) statusDisplay.textContent = "Error starting matched game.";
                  // Consider going back to initial view
                  initializeView();
              }
         }).catch(error => {
             console.error("Error fetching game state after match:", error);
-             if (statusElement) statusElement.textContent = "Error fetching matched game data.";
+             if (statusDisplay) statusDisplay.textContent = "Error fetching matched game data.";
             initializeView();
         });
     }
