@@ -45,7 +45,9 @@ let castlingRights = { // Synced from Firebase, used by game logic
     'black': { kingSide: true, queenSide: true }
 };
 let currentBoardState = null; // Holds the board state array synced from Firebase
-let gameStatus = 'pending'; // 'pending', 'waiting', 'active', 'check', 'checkmate', 'stalemate'
+let currentHalfMoveClock = 0; // For fifty-move rule
+let currentPositionHashes = {}; // Map of position hashes {hash: count}
+let gameStatus = 'pending'; // 'pending', 'waiting', 'active', 'check', 'checkmate', 'stalemate', 'draw_...'
 
 // Local UI state
 let selectedPiece = null; // DOM element of the selected piece
@@ -159,6 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
         castlingRights = { 'white': { kingSide: true, queenSide: true }, 'black': { kingSide: true, queenSide: true } };
         enPassantSquare = null;
         currentBoardState = null;
+        currentHalfMoveClock = 0;
+        currentPositionHashes = {};
         gameStatus = 'pending';
         selectedPiece = null; // Reset local UI selection
 
@@ -572,6 +576,9 @@ document.addEventListener('DOMContentLoaded', () => {
             enPassantSquare = gameState.enPassantSquare || null;
             currentBoardState = gameState.board;
             gameStatus = gameState.status || 'active';
+            // Update draw-related state, providing defaults if missing
+            currentHalfMoveClock = gameState.halfMoveClock || 0;
+            currentPositionHashes = gameState.positionHashes || {};
 
             // Update UI based on new state
             reloadBoardState(currentBoardState); // Update board visuals
@@ -829,9 +836,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Use the *synced* state as the basis for simulation
         const boardBeforeMove = currentBoardState;
         const pieceData = boardBeforeMove?.[fromRow]?.[fromCol];
-        // Get current draw-related state *before* the move
-        const currentHalfMoveClock = gameState?.halfMoveClock || 0;
-        const currentPositionHashes = gameState?.positionHashes || {};
+        // Get current draw-related state *before* the move using GLOBAL variables
+        // REMOVE: const currentHalfMoveClock = gameState?.halfMoveClock || 0;
+        // REMOVE: const currentPositionHashes = gameState?.positionHashes || {};
 
         if (!pieceData || pieceData.color !== turn) {
              console.error("Trying to move wrong piece or empty square based on synced state.");
@@ -885,7 +892,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextTurn = turn === 'white' ? 'black' : 'white';
 
         // --- Calculate Draw-Related State Updates ---
-        let nextHalfMoveClock = currentHalfMoveClock + 1;
+        // Use the global currentHalfMoveClock
+        let nextHalfMoveClock = currentHalfMoveClock + 1; 
         // Reset clock on pawn move or capture
         if (pieceType === 'pawn' || (capturedPieceData && capturedPieceData.piece)) {
             nextHalfMoveClock = 0;
@@ -893,8 +901,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Calculate new position hash *after* the move
         const newPositionHash = generatePositionHash(nextBoardState, nextTurn, nextCastlingRights, nextEnPassantSquare);
-        // Create next position history map
-        const nextPositionHashes = { ...currentPositionHashes };
+        // Create next position history map using global currentPositionHashes
+        const nextPositionHashes = { ...currentPositionHashes }; 
         nextPositionHashes[newPositionHash] = (nextPositionHashes[newPositionHash] || 0) + 1;
 
         // --- Check for Game End Conditions (Checkmate/Stalemate/Draw) ---
