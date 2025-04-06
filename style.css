@@ -491,12 +491,6 @@ button:disabled {
         font-size: clamp(1.5rem, 8vw, 2.5rem); /* Adjust piece size */
     }
 
-    .modal-content {
-        width: 90%;
-        padding: 1.5rem 1rem;
-        margin: 10% auto; /* Adjust vertical centering for mobile */
-    }
-
     #promotionOptions {
         flex-wrap: wrap; /* Allow wrapping if needed */
     }
