@@ -11,7 +11,8 @@
 }
 
 html {
-    font-size: 16px; /* Base font size */
+    font-size: 16px;
+    height: 100%;
 }
 
 body {
@@ -19,12 +20,12 @@ body {
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
-    background-color: #1a1a1d; /* Dark background */
-    background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.6)), url('https://www.transparenttextures.com/patterns/carbon-fibre-v2.png'); /* Subtle texture */
+    background-color: #1a1a1d;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.6)), url('https://www.transparenttextures.com/patterns/carbon-fibre-v2.png');
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #e0e0e0; /* Light grey text */
-    padding: 1rem;
-    overflow-x: hidden; /* Prevent horizontal scroll */
+    color: #e0e0e0;
+    padding: clamp(0.5rem, 2vw, 1.5rem);
+    overflow-x: hidden;
 }
 
 /* ========================================= */
@@ -36,39 +37,39 @@ body {
     flex-direction: column;
     align-items: center;
     width: 100%;
-    max-width: 900px; /* Max width for larger screens */
-    padding: 1rem;
+    max-width: min(900px, 95vw);
+    padding: clamp(0.5rem, 2vw, 1.5rem);
+    gap: clamp(1rem, 3vw, 2rem);
 }
 
 #controls-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    gap: clamp(1rem, 2vw, 1.5rem);
     width: 100%;
-    max-width: 500px; /* Limit width of controls */
-    padding: 1.5rem;
-    background-color: rgba(40, 40, 45, 0.7); /* Slightly lighter dark bg */
+    max-width: min(500px, 90vw);
+    padding: clamp(1rem, 2vw, 1.5rem);
+    background-color: rgba(40, 40, 45, 0.7);
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 }
 
 #game-container {
-    display: flex; /* Use flex to manage status/board */
+    display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
+    gap: clamp(0.5rem, 2vw, 1rem);
 }
 
 #board-container {
     width: 100%;
-    max-width: 60vh; /* Max size based on viewport height */
-    max-height: 80vw; /* Max size based on viewport width */
-    margin: 1rem auto; /* Center the board container */
-    position: relative; /* For potential overlays or effects */
+    max-width: min(60vh, 90vw);
+    aspect-ratio: 1;
+    margin: clamp(0.5rem, 2vw, 1rem) auto;
+    position: relative;
 }
-
 
 /* ========================================= */
 /*          Corner Info Displays           */
@@ -77,19 +78,23 @@ body {
 #connection-info,
 #game-id-corner {
     position: fixed;
-    top: 10px;
+    top: clamp(0.5rem, 2vw, 1rem);
     background-color: rgba(0, 0, 0, 0.7);
     color: #ccc;
-    padding: 0.4rem 0.8rem;
+    padding: clamp(0.3rem, 1vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.8rem);
     border-radius: 4px;
-    font-size: 0.8rem;
+    font-size: clamp(0.7rem, 2vw, 0.9rem);
     z-index: 100;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px); /* Subtle blur effect */
+    backdrop-filter: blur(2px);
+    max-width: 90vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-#connection-info { left: 10px; }
-#game-id-corner { right: 10px; }
+#connection-info { left: clamp(0.5rem, 2vw, 1rem); }
+#game-id-corner { right: clamp(0.5rem, 2vw, 1rem); }
 
 #connection-info span,
 #game-id-corner span {
@@ -97,15 +102,14 @@ body {
     color: #fff;
 }
 
-
 /* ========================================= */
 /*          Typography & Controls          */
 /* ========================================= */
 
 #game-title {
-    font-size: clamp(1.8rem, 5vw, 2.5rem); /* Responsive font size */
-    color: #c3073f; /* Accent color */
-    margin-bottom: 1.5rem;
+    font-size: clamp(1.5rem, 5vw, 2.5rem);
+    color: #c3073f;
+    margin-bottom: clamp(1rem, 3vw, 1.5rem);
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
     text-align: center;
     font-weight: bold;
@@ -114,58 +118,36 @@ body {
 #multiplayer-controls,
 #matchmaking-controls {
     display: flex;
-    flex-direction: column; /* Stack vertically */
+    flex-direction: column;
     align-items: center;
-    gap: 0.8rem;
+    gap: clamp(0.6rem, 1.5vw, 0.8rem);
     width: 100%;
 }
 
 #multiplayer-controls .button-group {
     display: flex;
-    gap: 0.8rem;
+    gap: clamp(0.5rem, 1.5vw, 0.8rem);
     width: 100%;
     justify-content: center;
 }
-#multiplayer-controls .button-group button {
-    flex-grow: 1; /* Buttons share space */
-}
-
 
 input[type="text"] {
-    padding: 0.8rem 1rem;
-    font-size: 1rem;
-    background-color: #2a2a2e; /* Dark input bg */
+    padding: clamp(0.6rem, 1.5vw, 0.8rem) clamp(0.8rem, 2vw, 1rem);
+    font-size: clamp(0.9rem, 2.5vw, 1rem);
+    background-color: #2a2a2e;
     color: #e0e0e0;
     border: 1px solid #444;
     border-radius: 4px;
-    width: 100%; /* Full width within container */
+    width: 100%;
     transition: border-color 0.3s, box-shadow 0.3s;
     text-align: center;
 }
 
-input[type="text"]::placeholder {
-    color: #888;
-}
-
-input[type="text"]:focus {
-    outline: none;
-    border-color: #c3073f; /* Accent color on focus */
-    box-shadow: 0 0 0 2px rgba(195, 7, 63, 0.3);
-}
-
-p#gameIdDisplay {
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-    color: #aaa;
-    min-height: 1.2em;
-    text-align: center;
-}
-
 button {
-    padding: 0.8rem 1.5rem;
-    font-size: 1rem;
+    padding: clamp(0.6rem, 1.5vw, 0.8rem) clamp(1rem, 2.5vw, 1.5rem);
+    font-size: clamp(0.9rem, 2.5vw, 1rem);
     font-weight: bold;
-    background-color: #4e4e50; /* Dark grey button */
+    background-color: #4e4e50;
     color: #fff;
     border: none;
     border-radius: 5px;
@@ -173,67 +155,43 @@ button {
     transition: background-color 0.3s, transform 0.1s;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    width: 100%; /* Default full width */
-    max-width: 220px; /* Max width */
+    width: 100%;
+    max-width: min(220px, 90vw);
 }
-/* Make grouped buttons not full width */
+
 #multiplayer-controls .button-group button {
-     width: auto;
-     max-width: none;
+    width: auto;
+    max-width: none;
+    flex: 1;
 }
 
-
-button:hover {
-    background-color: #6a6a6d;
-}
-
-button:active {
-    transform: scale(0.98);
-    background-color: #5a5a5d;
-}
-
-button:disabled {
-    background-color: #3a3a3d;
-    color: #777;
-    cursor: not-allowed;
-}
-
-#matchmaking-controls #cancelSearchBtn {
-    background-color: #9a031e; /* Darker red */
-}
-#matchmaking-controls #cancelSearchBtn:hover {
-    background-color: #c3073f;
+#status {
+    font-size: clamp(0.9rem, 3vw, 1.2rem);
+    font-weight: bold;
+    color: #f0f0f0;
+    text-align: center;
+    min-height: 1.5em;
+    padding: clamp(0.4rem, 1vw, 0.5rem);
+    background-color: rgba(40, 40, 45, 0.5);
+    border-radius: 4px;
+    width: 100%;
+    max-width: min(400px, 90vw);
 }
 
 /* ========================================= */
 /*          Game Area & Board              */
 /* ========================================= */
 
-#status {
-    margin-bottom: 1rem; /* Space below status */
-    font-size: clamp(1rem, 4vw, 1.3rem); /* Responsive */
-    font-weight: bold;
-    color: #f0f0f0;
-    text-align: center;
-    min-height: 1.5em; /* Prevent layout shifts */
-    padding: 0.5rem;
-    background-color: rgba(40, 40, 45, 0.5); /* Keep dark status bg */
-    border-radius: 4px;
-    width: 100%;
-    max-width: 400px;
-}
-
-/* --- Start Board Style Revert --- */
 #board {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
-    border: 8px solid #654321; /* Old: Dark wood color for border */
-    border-radius: 10px; /* Old: Rounded border */
-    box-shadow: 0 8px 16px rgba(0,0,0,0.4); /* Keep some shadow */
-    aspect-ratio: 1 / 1; /* Ensure it's square */
-    width: 100%; /* Take up container width */
-    background-color: #b58863; /* Old: Dark square fallback */
+    border: clamp(4px, 1vw, 8px) solid #654321;
+    border-radius: clamp(5px, 1.5vw, 10px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+    aspect-ratio: 1;
+    width: 100%;
+    background-color: #b58863;
 }
 
 .square {
@@ -241,12 +199,12 @@ button:disabled {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: clamp(1.8rem, 7vw, 3.5rem); /* Keep responsive piece size */
-    font-family: 'Chess Merida', 'Arial Unicode MS', sans-serif; /* Old: Specific font */
+    font-size: clamp(1.5rem, 6vw, 3rem);
+    font-family: 'Chess Merida', 'Arial Unicode MS', sans-serif;
     cursor: pointer;
     user-select: none;
-    transition: background-color 0.2s ease; /* Keep transition */
-    overflow: hidden; /* Keep effects contained */
+    transition: background-color 0.2s ease;
+    overflow: hidden;
 }
 
 /* Old Square Colors */
@@ -256,7 +214,6 @@ button:disabled {
 /* Old Piece Colors/Shadows (Slightly adjusted for visibility) */
 .square[data-color="white"] { color: #f0f0f0; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
 .square[data-color="black"] { color: #333; text-shadow: 1px 1px 2px rgba(255,255,255,0.2); }
-/* --- End Board Style Revert --- */
 
 /* Square Interactions & Indicators (Keep New Style but adapted) */
 .square:hover {
@@ -314,207 +271,106 @@ button:disabled {
 /* ========================================= */
 
 .modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1000; /* Higher z-index for modals */
+    display: none;
+    position: fixed;
+    z-index: 1000;
     left: 0;
     top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgba(0, 0, 0, 0.8); /* Darker overlay */
-    backdrop-filter: blur(3px); /* Optional: slightly blur background */
-    animation: fadeIn 0.3s ease-out; /* Keep fade-in */
-}
-
-@keyframes fadeIn { /* Ensure keyframe is defined if used */
-    from { opacity: 0; }
-    to { opacity: 1; }
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(3px);
+    animation: fadeIn 0.3s ease-out;
 }
 
 .modal-content {
-    background-color: #2a2a2e; /* Dark background like controls */
-    color: #e0e0e0; /* Light text */
-    margin: 15% auto; /* Center vertically on larger screens */
-    padding: 20px;
-    border: 1px solid #444; /* Dark border */
-    width: fit-content; /* Adjust width to content */
-    max-width: 90%; /* Max width for small screens */
+    background-color: #2a2a2e;
+    color: #e0e0e0;
+    margin: clamp(5%, 10vh, 15%) auto;
+    padding: clamp(1rem, 3vw, 2rem);
+    border: 1px solid #444;
+    width: fit-content;
+    max-width: min(90%, 500px);
     text-align: center;
-    border-radius: 8px; /* Consistent border-radius */
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); /* Consistent shadow */
-    position: relative; /* Needed for absolute positioning of close button if added */
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    position: relative;
 }
 
-.modal-content h2 {
-    margin-top: 0;
-    color: #eee; /* Ensure heading is light */
-    margin-bottom: 1rem;
-}
-
-.promotion-choices button {
-    font-size: 2.5em; /* Make pieces large */
-    margin: 5px 10px;
-    padding: 5px 10px;
-    cursor: pointer;
-    background: #444; /* Darker button background */
+.promotion-choices button,
+.promotionChoice {
+    font-size: clamp(2rem, 5vw, 2.5rem);
+    margin: clamp(0.3rem, 1vw, 0.5rem);
+    padding: clamp(0.3rem, 1vw, 0.5rem);
+    background: #444;
     border: 1px solid #555;
     border-radius: 4px;
-    color: #e0e0e0; /* Light piece color */
-    width: 60px; /* Give fixed size */
-    height: 60px;
-    display: inline-flex; /* Use flex to center content */
+    color: #e0e0e0;
+    width: clamp(50px, 8vw, 60px);
+    height: clamp(50px, 8vw, 60px);
+    display: inline-flex;
     justify-content: center;
     align-items: center;
     transition: background-color 0.2s, transform 0.1s;
-}
-
-.promotion-choices button:hover {
-    background-color: #555;
-}
-
-.promotion-choices button:active {
-    transform: scale(0.95);
-}
-
-/* Promotion Modal Specifics */
-#promotionModal p {
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-    color: #ccc;
+    cursor: pointer;
 }
 
 #promotionOptions {
     display: flex;
-    justify-content: space-around;
-    gap: 0.5rem;
-}
-
-.promotionChoice {
-    font-size: 2.5rem;
-    background: #444;
-    border: 1px solid #555;
-    border-radius: 4px;
-    padding: 0.5rem;
-    width: 60px; /* Fixed width */
-    height: 60px;
-    max-width: none; /* Override general button max-width */
-    display: flex;
     justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
+    gap: clamp(0.3rem, 1vw, 0.5rem);
+    flex-wrap: wrap;
 }
-.promotionChoice.white { color: #e8e8e8; }
-.promotionChoice.black { color: #1c1c1c; } /* Ensure visibility */
-
-.promotionChoice:hover {
-    background-color: #555;
-}
-.promotionChoice:active {
-    transform: scale(0.95);
-}
-
-/* Checkmate Modal Specifics */
-#checkmateModal .modal-content {
-    /* Inherits general modal styles */
-    padding: 2rem 1.5rem;
-}
-
-#checkmateResult {
-    color: #eee;
-    font-size: 1.4rem;
-    margin-bottom: 1rem;
-    font-weight: bold;
-}
-
-#winningPiece { /* Likely unused now, hide or repurpose */
-   display: none;
-}
-
-#checkmateModal #continueButton {
-    margin-top: 1.5rem;
-    background-color: #c3073f; /* Accent color */
-    width: auto; /* Don't force full width */
-    max-width: none;
-    padding: 0.7rem 2rem;
-}
-#checkmateModal #continueButton:hover {
-    background-color: #9a031e;
-}
-
 
 /* ========================================= */
 /*          Responsiveness                 */
 /* ========================================= */
 
 @media (max-width: 600px) {
-    body {
-        padding: 0.5rem;
+    #multiplayer-controls .button-group {
+        flex-direction: column;
     }
 
-    #main-container {
-        padding: 0.5rem;
-    }
-
-    #controls-container {
-        padding: 1rem;
-        gap: 1rem;
-    }
-
-    #multiplayer-controls,
-    #matchmaking-controls {
-        gap: 0.6rem;
-    }
-     #multiplayer-controls .button-group {
-        flex-direction: column; /* Stack create/join */
-    }
-
-    input[type="text"] {
-        padding: 0.7rem 0.8rem;
-        font-size: 0.9rem;
-    }
-
-    button {
-        padding: 0.7rem 1rem;
-        font-size: 0.9rem;
-    }
     #multiplayer-controls .button-group button {
-         width: 100%; /* Stacked buttons take full width */
-    }
-
-    #status {
-        font-size: 0.9rem;
-        padding: 0.4rem;
-        max-width: 90%;
+        width: 100%;
     }
 
     #board-container {
-        max-width: 90vw; /* Allow board to take more width */
-        max-height: 90vw; /* Keep aspect ratio */
-    }
-
-    .square {
-        font-size: clamp(1.5rem, 8vw, 2.5rem); /* Adjust piece size */
+        max-width: 95vw;
     }
 
     .modal-content {
-        width: 90%;
+        margin: 10% auto;
         padding: 1.5rem 1rem;
-        margin: 10% auto; /* Adjust vertical centering for mobile */
     }
 
     #promotionOptions {
-        flex-wrap: wrap; /* Allow wrapping if needed */
+        gap: 0.5rem;
     }
-     .promotionChoice {
-        font-size: 2rem;
+
+    .promotionChoice {
         width: 50px;
         height: 50px;
-     }
+    }
+}
 
-    #connection-info, #game-id-corner {
-        font-size: 0.7rem;
-        padding: 0.3rem 0.6rem;
+@media (min-width: 601px) and (max-width: 1024px) {
+    #board-container {
+        max-width: 70vh;
+    }
+
+    .modal-content {
+        margin: 12% auto;
+    }
+}
+
+@media (min-width: 1025px) {
+    #board-container {
+        max-width: 60vh;
+    }
+
+    .modal-content {
+        margin: 15% auto;
     }
 }
