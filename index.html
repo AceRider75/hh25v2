@@ -19,60 +19,50 @@
     <div id="game-id-corner">
         Game ID: <span id="game-id-corner-value">N/A</span>
     </div>
+    <h1 id="game-title">Chess</h1>
 
-    <div id="main-container">
-        <h1 id="game-title">Chess Noir</h1>
-
-        <div id="controls-container">
-            <!-- Multiplayer Controls -->
-            <div id="multiplayer-controls">
-                <input type="text" id="gameIdInput" placeholder="Enter Game ID to Join">
-                <div class="button-group">
-                    <button id="joinGameBtn">Join Game</button>
-                    <button id="createGameBtn">Create New Game</button>
-                </div>
-                <p id="gameIdDisplay"></p>
-            </div>
-            <!-- Matchmaking Controls -->
-            <div id="matchmaking-controls">
-                <button id="findMatchBtn">Find Online Match</button>
-                <button id="cancelSearchBtn" style="display: none;">Cancel Search</button>
-            </div>
-        </div>
-
-        <div id="game-container" style="display: none;">
-            <div id="status">Waiting for opponent...</div>
-            <div id="board-container">
-                 <div id="board"></div>
-            </div>
-        </div>
+    <!-- Multiplayer Controls -->
+    <div id="multiplayer-controls">
+        <button id="createGameBtn">Create New Game</button>
+        <input type="text" id="gameIdInput" placeholder="Enter Game ID to Join">
+        <button id="joinGameBtn">Join Game</button>
+        <p id="gameIdDisplay"></p>
+    </div>
+    <!-- Add Find Match button -->
+    <div id="matchmaking-controls" style="margin-bottom: 20px;">
+        <button id="findMatchBtn">Find Online Match</button>
+        <button id="cancelSearchBtn" style="display: none;">Cancel Search</button>
     </div>
 
-    <!-- Modals remain outside main containers -->
-    <div id="promotionModal" style="display:none;">
-        <p>Promote Pawn:</p>
-        <div id="promotionOptions">
-            <button data-piece="queen" class="promotionChoice white">♕</button>
-            <button data-piece="rook" class="promotionChoice white">♖</button>
-            <button data-piece="bishop" class="promotionChoice white">♗</button>
-            <button data-piece="knight" class="promotionChoice white">♘</button>
-            <button data-piece="queen" class="promotionChoice black" style="display:none;">♛</button>
-            <button data-piece="rook" class="promotionChoice black" style="display:none;">♜</button>
-            <button data-piece="bishop" class="promotionChoice black" style="display:none;">♝</button>
-            <button data-piece="knight" class="promotionChoice black" style="display:none;">♞</button>
+    <div id="board"></div>
+    
+    <div id="status">White's turn</div>
+    
+    
+    <!-- Promotion Modal -->
+    <div id="promotionModal" class="modal">
+        <div class="modal-content">
+            <h2>Promote Pawn To:</h2>
+            <div class="promotion-choices">
+                <button id="promote-q"></button>
+                <button id="promote-r"></button>
+                <button id="promote-b"></button>
+                <button id="promote-n"></button>
+            </div>
         </div>
     </div>
     <div id="checkmateModal" class="modal">
+        <span class="close">&times;</span>
         <div class="modal-content">
-            <span class="close">&times;</span>
             <h2 id="checkmateResult"></h2>
             <div id="winningPiece"></div>
             <button id="continueButton">Continue</button>
         </div>
     </div>
 
-    <!-- Load scripts last -->
+    <!-- Load game logic first -->
     <script src="game_logic.js"></script>
+    <!-- Load UI and multiplayer interaction second -->
     <script src="ui_multiplayer.js"></script>
 </body>
 </html>
