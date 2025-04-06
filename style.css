@@ -117,7 +117,6 @@ body {
     flex-direction: column; /* Stack vertically */
     align-items: center;
     gap: 0.8rem;
-    width: 100%;
 }
 
 #multiplayer-controls .button-group {
@@ -173,15 +172,14 @@ button {
     transition: background-color 0.3s, transform 0.1s;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    width: 100%; /* Default full width */
-    max-width: 220px; /* Max width */
-}
-/* Make grouped buttons not full width */
-#multiplayer-controls .button-group button {
-     width: auto;
-     max-width: none;
 }
 
+/* Make grouped buttons not full width */
+#multiplayer-controls .button-group button {
+     /* width: auto; */ /* Removed */
+     /* max-width: none; */ /* Removed */
+     /* flex-grow: 1; */ /* Removed from here, was added earlier */
+}
 
 button:hover {
     background-color: #6a6a6d;
