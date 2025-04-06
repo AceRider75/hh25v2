@@ -326,11 +326,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Add self to the queue (use push for unique ID)
         myQueueEntryRef = queueRef.push(true);
+        const myId = myQueueEntryRef.key; // Store the key immediately
+
         // Make sure to remove self from queue if connection drops during search
         myQueueEntryRef.onDisconnect().remove();
 
         // Listen to the queue for potential matches
         queueListenerHandle = queueRef.on('value', handleQueueUpdate);
+        // Also start monitoring own queue entry removal (for player 2 scenario)
+        // Pass the stored key to the monitor function
+        monitorMyQueueEntry(myId); 
     }
 
     function cancelSearch() {
@@ -479,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // This is a workaround for player 2 finding the game
     // A better way involves direct invites or writing gameId back.
-    function monitorMyQueueEntry() {
+    function monitorMyQueueEntry(myId) {
         if (!myQueueEntryRef) return;
         // Detach previous listener if any to prevent duplicates
         myQueueEntryRef.off('value'); 
@@ -489,15 +494,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log("My queue entry removed, likely matched by Player 1. Trying to find game...");
                 // Stop listening to own entry now
                 myQueueEntryRef.off('value'); 
-                findMyMatchedGame();
+                findMyMatchedGame(myId);
             }
         });
     }
 
     // Helper for Player 2 to find the game created by Player 1
-    function findMyMatchedGame() {
+    function findMyMatchedGame(myId) {
         // This requires knowing my unique queue ID *after* it's created
-        const myId = myQueueEntryRef?.key; // Use optional chaining
         if (!myId) {
             console.error("Cannot find matched game: My queue ID is unknown.");
             cancelSearch(); // Reset UI
