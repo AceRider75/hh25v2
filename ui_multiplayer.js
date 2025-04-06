@@ -205,6 +205,31 @@ document.addEventListener('DOMContentLoaded', () => {
             cancelSearchBtn.removeEventListener('click', cancelSearch);
             cancelSearchBtn.addEventListener('click', cancelSearch);
         }
+
+        const gameControlsDiv = document.getElementById('gameControls');
+        if (!gameControlsDiv) {
+            console.error("Game controls container not found!");
+            return;
+        }
+        gameControlsDiv.innerHTML = ''; // Clear previous controls if any
+
+        // Add event listeners for promotion choices
+        const promotionModal = document.getElementById('promotionModal');
+        if (promotionModal) {
+            const choices = promotionModal.querySelectorAll('.promotionChoice');
+            choices.forEach(choice => {
+                // Remove existing listener to prevent duplicates if this runs multiple times
+                choice.removeEventListener('click', handlePromotionChoice);
+                // Add the new listener
+                choice.addEventListener('click', handlePromotionChoice);
+            });
+        } else {
+            console.error("Promotion modal element not found!");
+        }
+
+        // Display game ID and copy link button (if applicable)
+        // ... (rest of the initializeView function remains the same)
+        const gameIdDisplay = document.createElement('p');
     }
 
     // --- Multiplayer Functions ---
@@ -586,19 +611,38 @@ document.addEventListener('DOMContentLoaded', () => {
             reloadBoardState(currentBoardState); // Update board visuals
             updateStatusText(gameState); // Update text status
 
-            // Handle UI changes for check/checkmate/stalemate
+            // Get promotion modal element
+            const promotionModal = document.getElementById('promotionModal');
+
+            // Handle UI changes for game end/special states
             clearCheckHighlight();
-            if (gameStatus === 'check') {
+            if (promotionModal) promotionModal.style.display = 'none'; // Hide modal by default
+
+            if (gameStatus === 'promoting' && turn === playerColor) {
+                // Show promotion modal for the current player
+                console.log("Showing promotion modal for", playerColor);
+                if (promotionModal) {
+                    // Show only pieces of the correct color
+                    document.querySelectorAll('#promotionOptions .promotionChoice').forEach(btn => {
+                        btn.style.display = btn.classList.contains(playerColor) ? 'flex' : 'none';
+                    });
+                    promotionModal.style.display = 'flex'; // Show the modal
+                } else {
+                    console.error("Promotion modal element not found!");
+                }
+            } else if (gameStatus === 'check') {
                 highlightCheckedKing(turn); // Highlight the king whose turn it is
             } else if (gameStatus === 'checkmate') {
                 const winner = turn === 'white' ? 'Black' : 'White';
                 showCheckmateModal(`${winner} wins by Checkmate!`, '');
-            } else if (gameStatus === 'stalemate') {
-                if (statusElement) statusElement.textContent = "Stalemate! It's a draw.";
+            } else if (gameStatus === 'stalemate' || gameStatus.startsWith('draw_')) {
+                // Status text updated by updateStatusText, maybe add modal later
+                 console.log("Game ended in a draw:", gameStatus);
             }
 
             // Deselect piece if it's no longer the local player's turn
-            if (selectedPiece && turn !== playerColor) {
+            // (Don't deselect if waiting for promotion choice)
+            if (selectedPiece && turn !== playerColor && gameStatus !== 'promoting') {
                  deselectPiece();
              }
 
@@ -884,28 +928,53 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 3. Determine next turn
-        const nextTurn = turn === 'white' ? 'black' : 'white';
-
-        // 4. Check for Check, Checkmate, Stalemate for the *next* player on the *next* board state
-        // Pass the state *after* the move, and the EP/Castling state *for the next turn*
+        // Declare variables that will be used throughout the function
+        let nextTurn;
         let nextGameStatus = 'active';
-        const isNextPlayerInCheck = isInCheck(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights);
 
-        if (isNextPlayerInCheck) {
-            // Pass state relevant for next player's move options
-            if (!hasValidMoves(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights)) {
-                nextGameStatus = 'checkmate';
-            } else {
+        // 3. Check for Pawn Promotion
+        let isPromotionMove = false;
+        if (pieceType === 'pawn' && (toRow === 0 || toRow === 7)) {
+             console.log("Pawn promotion detected at", toRow, toCol);
+             isPromotionMove = true;
+             // Don't change the board state yet
+        }
+
+        // 4. Determine next turn based on promotion status
+        nextTurn = isPromotionMove ? turn : (turn === 'white' ? 'black' : 'white');
+
+        // 5. Check for Check, Checkmate, Stalemate for the *next* player on the *next* board state
+        // Only check if not promoting
+        if (!isPromotionMove) {
+            const isNextPlayerInCheck = isInCheck(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights);
+            const nextPlayerHasMoves = hasValidMoves(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights);
+
+            if (!nextPlayerHasMoves) {
+                nextGameStatus = isNextPlayerInCheck ? 'checkmate' : 'stalemate';
+            } else if (isNextPlayerInCheck) {
                 nextGameStatus = 'check';
             }
         } else {
-             // Pass state relevant for next player's move options
-             if (!hasValidMoves(nextBoardState, nextTurn, nextEnPassantSquare, nextCastlingRights)) {
-                 nextGameStatus = 'stalemate';
-             } else {
-                 nextGameStatus = 'active';
-             }
+            nextGameStatus = 'promoting';
+        }
+
+        // --- Calculate Draw-Related State Updates ---
+        let nextHalfMoveClock = currentHalfMoveClock + 1;
+        // Reuse capturedPieceData declared earlier
+        if (pieceType === 'pawn' || (capturedPieceData && capturedPieceData.piece)) {
+            nextHalfMoveClock = 0;
+        }
+        const newPositionHash = generatePositionHash(nextBoardState, nextTurn, nextCastlingRights, nextEnPassantSquare);
+        const nextPositionHashes = { ...currentPositionHashes };
+        nextPositionHashes[newPositionHash] = (nextPositionHashes[newPositionHash] || 0) + 1;
+
+        // Check for draws if game is still potentially active
+        if (nextGameStatus === 'active' || nextGameStatus === 'check') {
+            if (nextHalfMoveClock >= 100) {
+                nextGameStatus = 'draw_fifty_moves';
+            } else if (nextPositionHashes[newPositionHash] >= 3) {
+                nextGameStatus = 'draw_repetition';
+            }
         }
 
         // --- Construct the final game state object to send ---
@@ -914,15 +983,18 @@ document.addEventListener('DOMContentLoaded', () => {
             turn: nextTurn,
             castlingRights: nextCastlingRights,
             enPassantSquare: nextEnPassantSquare,
-            // Assume both players are present when a move is made
-            players: { white: true, black: true }, 
+            players: { white: true, black: true },
             status: nextGameStatus,
+            halfMoveClock: nextHalfMoveClock,
+            positionHashes: nextPositionHashes,
             lastMove: { 
                 from: [fromRow, fromCol], to: [toRow, toCol],
                 piece: pieceType, color: pieceColor,
                 // Was this move a castle? (King move > 1 square)
                 castle: (pieceType === 'king' && Math.abs(fromCol - toCol) === 2)
-            }
+            },
+            // Conditionally add promotionSquare
+            ...(isPromotionMove && { promotionSquare: [toRow, toCol] })
         };
 
         // --- Send to Firebase ---
@@ -943,8 +1015,88 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
+    // --- Promotion Choice Handler ---
+    function handlePromotionChoice(event) {
+        if (gameStatus !== 'promoting' || turn !== playerColor) {
+            console.warn("Promotion choice clicked when not allowed.");
+            return;
+        }
+
+        const chosenPiece = event.target.closest('.promotionChoice').dataset.piece;
+        const promotionModal = document.getElementById('promotionModal');
+        if (promotionModal) promotionModal.style.display = 'none'; // Hide modal immediately
+
+        console.log(`Player ${playerColor} chose promotion to: ${chosenPiece}`);
+
+        // Get the promotion square from the current (synced) game state
+        const promoSq = gameState?.promotionSquare;
+        if (!promoSq || promoSq.length !== 2) {
+            console.error("Cannot promote: Promotion square data missing from game state.");
+            return; // Or revert to a safe state
+        }
+        const [promoRow, promoCol] = promoSq;
+
+        // Create the board state *after* the chosen promotion
+        let boardAfterPromotion = JSON.parse(JSON.stringify(currentBoardState));
+        boardAfterPromotion[promoRow][promoCol] = { piece: chosenPiece, color: playerColor, moved: true };
+
+        // Determine the *next* turn (opponent's turn)
+        const nextTurnAfterPromotion = playerColor === 'white' ? 'black' : 'white';
+
+        // Recalculate draw state (position hash)
+        // Half move clock remains 0 because pawn move occurred
+        const nextPositionHash = generatePositionHash(boardAfterPromotion, nextTurnAfterPromotion, castlingRights, null); // EP is null after promotion
+        const nextPositionHashes = { ...currentPositionHashes };
+        nextPositionHashes[nextPositionHash] = (nextPositionHashes[nextPositionHash] || 0) + 1;
+
+        // Recalculate check/checkmate/stalemate/draw for the opponent *after* the promotion
+        let nextStatusAfterPromotion = 'active';
+        const opponentHasMoves = hasValidMoves(boardAfterPromotion, nextTurnAfterPromotion, null, castlingRights); // EP is null
+        const isOpponentInCheck = isInCheck(boardAfterPromotion, nextTurnAfterPromotion, null, castlingRights);
+
+        if (!opponentHasMoves) {
+            nextStatusAfterPromotion = isOpponentInCheck ? 'checkmate' : 'stalemate';
+        } else if (isOpponentInCheck) {
+            nextStatusAfterPromotion = 'check';
+        }
+
+        // Check for draws (repetition - 50 move unlikely right after promotion)
+        if (nextStatusAfterPromotion === 'active' || nextStatusAfterPromotion === 'check') {
+             if (nextPositionHashes[newPositionHash] >= 3) {
+                 nextStatusAfterPromotion = 'draw_repetition';
+             }
+             // No need to check 50-move rule here (reset by pawn move)
+        }
+
+        // Construct the final state to send AFTER promotion choice
+        const finalGameStateAfterPromotion = {
+            board: boardAfterPromotion,
+            turn: nextTurnAfterPromotion,
+            castlingRights: castlingRights, // Remain unchanged from previous state
+            enPassantSquare: null, // Promotion clears EP
+            players: { white: true, black: true },
+            status: nextStatusAfterPromotion,
+            halfMoveClock: currentHalfMoveClock, // Keep the clock from the 'promoting' state
+            positionHashes: nextPositionHashes,
+            lastMove: gameState?.lastMove, // Keep last move data from pawn push
+            promotionSquare: null // Clear the promotion square info
+        };
+
+        // Send the update to Firebase
+        if (statusElement) statusElement.textContent = "Processing promotion...";
+        sendGameStateToFirebase(finalGameStateAfterPromotion)
+            .then(() => {
+                console.log("Promotion update sent successfully.");
+                // Listener will handle UI update
+            })
+            .catch(error => {
+                console.error("Error sending promotion update:", error);
+                if (statusElement) statusElement.textContent = `Error promoting: ${error.message}`;
+            });
+    }
+
     // --- Initial Setup ---
-    initializeView(); // Set up multiplayer controls view
+    initializeView();
 
     // --- Firebase Presence Logic ---
     const onlineCountElement = document.getElementById('online-count');
