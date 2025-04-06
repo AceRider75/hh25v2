@@ -164,7 +164,6 @@ button {
     color: #fff;
     border: none;
     border-radius: 5px;
-    margin: 15px;
     cursor: pointer;
     transition: background-color 0.3s, transform 0.1s;
     text-transform: uppercase;
