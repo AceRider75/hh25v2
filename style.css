@@ -329,6 +329,7 @@ button:disabled {
     background-color: #2a2a2e; /* Dark background like controls */
     color: #e0e0e0; /* Light text */
     margin: 15% auto; /* Center vertically on larger screens */
+    margin-top: 240px;
     padding: 20px;
     border: 1px solid #444; /* Dark border */
     width: fit-content; /* Adjust width to content */
