@@ -509,3 +509,44 @@ button:disabled {
         padding: 0.3rem 0.6rem;
     }
 }
+
+/* --- Modal Styles --- */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 100; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0, 0, 0, 0.6); /* Black w/ opacity */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: fit-content; /* Adjust width to content */
+    text-align: center;
+    border-radius: 5px;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+}
+
+.promotion-choices button {
+    font-size: 2.5em; /* Make pieces large */
+    margin: 5px 10px;
+    padding: 5px 10px;
+    cursor: pointer;
+    background: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.promotion-choices button:hover {
+    background-color: #eee;
+}
